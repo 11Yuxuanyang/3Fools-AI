@@ -25,8 +25,9 @@ import {
   MoveRight,
   Minus,
   Eraser,
-  Image,
+  Image as LucideImage,
 } from 'lucide-react';
+import { CanvasOnboarding } from './CanvasOnboarding';
 import { FloatingToolbar } from './FloatingToolbar';
 import { IconBtn } from './IconBtn';
 import { StoryboardEditor, SceneDetailModal, ImagePicker } from './Storyboard';
@@ -138,6 +139,36 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handleTemplateSelect = (template: 'cyberpunk' | 'mascot' | 'surreal') => {
+    // Mock template loading - in real app this would load specific JSON
+    const centerX = -pan.x + (window.innerWidth / 2);
+    const centerY = -pan.y + (window.innerHeight / 2);
+
+    let newItems: CanvasItem[] = [];
+
+    if (template === 'cyberpunk') {
+      newItems = [
+        { id: generateId(), type: 'text', src: 'Cyberpunk City', x: centerX - 100, y: centerY - 150, width: 200, height: 40, zIndex: 1, fontSize: 32, fontFamily: 'system-ui', fontWeight: 'bold', color: '#0ea5e9', textAlign: 'center' },
+        { id: generateId(), type: 'rectangle', src: '', x: centerX - 120, y: centerY - 100, width: 240, height: 200, zIndex: 0, fill: '#1e293b', stroke: '#0ea5e9', strokeWidth: 2, borderRadius: 16 }
+      ];
+    } else if (template === 'mascot') {
+      newItems = [
+        { id: generateId(), type: 'text', src: 'Cute Mascot', x: centerX - 100, y: centerY - 150, width: 200, height: 40, zIndex: 1, fontSize: 32, fontFamily: 'system-ui', fontWeight: 'bold', color: '#f59e0b', textAlign: 'center' },
+        { id: generateId(), type: 'circle', src: '', x: centerX - 60, y: centerY - 60, width: 120, height: 120, zIndex: 0, fill: '#fef3c7', stroke: '#f59e0b', strokeWidth: 2 }
+      ];
+    } else {
+      newItems = [
+        { id: generateId(), type: 'text', src: 'Surreal Art', x: centerX - 100, y: centerY - 150, width: 200, height: 40, zIndex: 1, fontSize: 32, fontFamily: 'system-ui', fontWeight: 'bold', color: '#a855f7', textAlign: 'center' },
+        { id: generateId(), type: 'brush', src: '', x: 0, y: 0, width: 0, height: 0, zIndex: 0, stroke: '#a855f7', strokeWidth: 4, points: [{ x: centerX, y: centerY }, { x: centerX + 50, y: centerY + 50 }, { x: centerX + 100, y: centerY }] }
+      ];
+    }
+
+    setItems(prev => [...prev, ...newItems]);
+  };
+
+  // Import CanvasOnboarding
+  const { CanvasOnboarding } = require('./CanvasOnboarding');
 
   // Auto-save effect
   useEffect(() => {
@@ -420,7 +451,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
         options: { resolution },
       });
 
-      const img = new Image();
+      const img = new window.Image();
       img.src = base64Image;
       img.onload = () => {
         // 根据宽高比计算显示尺寸
@@ -486,8 +517,8 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       if (newImageSrc) {
         setItems(prev => prev.map(item =>
           item.id === selectedIds[0]
-          ? { ...item, src: newImageSrc }
-          : item
+            ? { ...item, src: newImageSrc }
+            : item
         ));
       }
 
@@ -1143,11 +1174,10 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
         <div className="flex items-center gap-3 pointer-events-auto">
           {/* 剧本模式 */}
           <button
-            className={`flex items-center gap-2 px-4 py-2 shadow-sm rounded-lg transition-all text-sm font-medium ${
-              showStoryboard
-                ? 'bg-violet-500 text-white'
-                : 'bg-white border border-violet-200 text-violet-600 hover:bg-violet-50'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 shadow-sm rounded-lg transition-all text-sm font-medium ${showStoryboard
+              ? 'bg-violet-500 text-white'
+              : 'bg-white border border-violet-200 text-violet-600 hover:bg-violet-50'
+              }`}
             onClick={() => setShowStoryboard(!showStoryboard)}
           >
             <ScrollText size={16} />
@@ -1196,11 +1226,10 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
         <div className="relative">
           <Tooltip content="形状工具" side="right">
             <button
-              className={`relative p-3 rounded-full transition-all duration-200 ease-out ${
-                [ToolMode.TEXT, ToolMode.RECTANGLE, ToolMode.CIRCLE, ToolMode.LINE, ToolMode.ARROW].includes(toolMode) || showCreativeTools
-                  ? 'bg-gray-800 text-white shadow-md scale-105'
-                  : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'
-              }`}
+              className={`relative p-3 rounded-full transition-all duration-200 ease-out ${[ToolMode.TEXT, ToolMode.RECTANGLE, ToolMode.CIRCLE, ToolMode.LINE, ToolMode.ARROW].includes(toolMode) || showCreativeTools
+                ? 'bg-gray-800 text-white shadow-md scale-105'
+                : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'
+                }`}
               onClick={() => setShowCreativeTools(!showCreativeTools)}
             >
               <Shapes size={20} />
@@ -1491,7 +1520,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
                 )}
                 {/* Context Toolbar anchored to item - only for single selected images */}
                 {isSelected && selectedIds.length === 1 && !isPanning && !isDragging && item.type === 'image' && (
-                  <div className="absolute top-0 left-1/2" style={{ transform: `translateX(-50%) scale(${1/scale})`, transformOrigin: 'bottom center' }}>
+                  <div className="absolute top-0 left-1/2" style={{ transform: `translateX(-50%) scale(${1 / scale})`, transformOrigin: 'bottom center' }}>
                     <FloatingToolbar
                       onUpscale={() => handleContextAction('upscale')}
                       onRemoveBg={() => handleContextAction('removeBg')}
@@ -1506,7 +1535,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
                 {/* Simple delete button for non-image items (single select only) */}
                 {isSelected && selectedIds.length === 1 && !isPanning && !isDragging && item.type !== 'image' && !editingTextId && (
                   <div
-                    style={{ transform: `scale(${1/scale})`, transformOrigin: 'bottom center' }}
+                    style={{ transform: `scale(${1 / scale})`, transformOrigin: 'bottom center' }}
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -1516,7 +1545,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
                         className="p-2 bg-white rounded-lg shadow-lg border border-gray-200 text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors"
                         title="删除"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
                       </button>
                     </div>
                   </div>
@@ -1571,7 +1600,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
                 {/* 多选删除按钮 */}
                 {!isPanning && !isDragging && (
                   <div
-                    style={{ transform: `scale(${1/scale})`, transformOrigin: 'top center' }}
+                    style={{ transform: `scale(${1 / scale})`, transformOrigin: 'top center' }}
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -1581,7 +1610,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
                         className="p-2 bg-white rounded-lg shadow-lg border border-gray-200 text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors flex items-center gap-1.5"
                         title={`删除 ${selectedIds.length} 个元素`}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
                         <span className="text-xs font-medium">{selectedIds.length}</span>
                       </button>
                     </div>
@@ -1616,29 +1645,29 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
 
         {/* --- Empty State / Onboarding --- */}
         {items.length === 0 && !isProcessing && (
-           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-0">
-             <div className="bg-white p-8 rounded-2xl shadow-float border border-gray-100 max-w-2xl w-full mx-auto pointer-events-auto">
-               <h2 className="text-3xl font-bold text-gray-900 mb-2">探索你的创意</h2>
-               <p className="text-gray-500 mb-8">选择一个示例，看看 CanvasAI 能做什么。</p>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-0">
+            <div className="bg-white p-8 rounded-2xl shadow-float border border-gray-100 max-w-2xl w-full mx-auto pointer-events-auto">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">探索你的创意</h2>
+              <p className="text-gray-500 mb-8">选择一个示例，看看 CanvasAI 能做什么。</p>
 
-               <div className="grid grid-cols-3 gap-4">
-                 {[
-                   { t: '赛博朋克城市', i: '🌆', p: '一座充满霓虹灯和飞行汽车的未来城市' },
-                   { t: '可爱吉祥物', i: '🐼', p: '一只可爱的3D熊猫拿着竹子' },
-                   { t: '超现实艺术', i: '🎨', p: '沙漠中融化时钟的超现实主义画作' }
-                 ].map((demo, i) => (
-                   <button
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { t: '赛博朋克城市', i: '🌆', p: '一座充满霓虹灯和飞行汽车的未来城市' },
+                  { t: '可爱吉祥物', i: '🐼', p: '一只可爱的3D熊猫拿着竹子' },
+                  { t: '超现实艺术', i: '🎨', p: '沙漠中融化时钟的超现实主义画作' }
+                ].map((demo, i) => (
+                  <button
                     key={i}
                     onClick={() => setPrompt(demo.p)}
                     className="flex flex-col items-center p-4 rounded-xl border border-gray-100 hover:border-primary/50 hover:bg-gray-50 transition-all text-left"
-                   >
-                     <span className="text-4xl mb-3">{demo.i}</span>
-                     <span className="font-semibold text-gray-800 text-sm">{demo.t}</span>
-                   </button>
-                 ))}
-               </div>
-             </div>
-           </div>
+                  >
+                    <span className="text-4xl mb-3">{demo.i}</span>
+                    <span className="font-semibold text-gray-800 text-sm">{demo.t}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
       </div>
@@ -1672,90 +1701,88 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
 
           {/* Settings Popover */}
           {showSettings && (
-             <div className="bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-100 w-full mb-2 animate-in fade-in slide-in-from-bottom-2">
-                <div className="space-y-4">
-                  {/* 宽高比 */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-4 h-4 rounded border-2 border-gray-400" />
-                      <span className="text-xs font-semibold text-gray-700">宽高比</span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                       {[
-                         { value: '1:1', icon: 'aspect-square' },
-                         { value: '4:3', icon: 'aspect-4-3' },
-                         { value: '3:4', icon: 'aspect-3-4' },
-                         { value: '16:9', icon: 'aspect-wide' },
-                         { value: '9:16', icon: 'aspect-tall' },
-                         { value: '3:2', icon: 'aspect-3-2' },
-                         { value: '2:3', icon: 'aspect-2-3' },
-                         { value: '21:9', icon: 'aspect-ultra' },
-                       ].map(r => {
-                         const [w, h] = r.value.split(':').map(Number);
-                         const ratio = w / h;
-                         const boxW = ratio >= 1 ? 20 : 20 * ratio;
-                         const boxH = ratio >= 1 ? 20 / ratio : 20;
-                         return (
-                           <button
-                             key={r.value}
-                             onClick={() => setAspectRatio(r.value)}
-                             className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${
-                               aspectRatio === r.value
-                                 ? 'bg-primary/10 ring-2 ring-primary/30'
-                                 : 'bg-gray-50 hover:bg-gray-100'
-                             }`}
-                           >
-                             <div
-                               className={`rounded-sm ${aspectRatio === r.value ? 'bg-primary' : 'bg-gray-400'}`}
-                               style={{ width: boxW, height: boxH }}
-                             />
-                             <span className={`text-[10px] font-medium ${aspectRatio === r.value ? 'text-primary' : 'text-gray-500'}`}>
-                               {r.value}
-                             </span>
-                           </button>
-                         );
-                       })}
-                    </div>
+            <div className="bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-lg border border-gray-100 w-full mb-2 animate-in fade-in slide-in-from-bottom-2">
+              <div className="space-y-4">
+                {/* 宽高比 */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-4 h-4 rounded border-2 border-gray-400" />
+                    <span className="text-xs font-semibold text-gray-700">宽高比</span>
                   </div>
-
-                  <div className="h-px bg-gray-100" />
-
-                  {/* 分辨率 */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-4 h-4 rounded-full border-2 border-gray-400 flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                      </div>
-                      <span className="text-xs font-semibold text-gray-700">分辨率</span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                       {[
-                         { value: '512', label: '标清', sub: '512px' },
-                         { value: '768', label: '高清', sub: '768px' },
-                         { value: '1024', label: '1K', sub: '1024px' },
-                         { value: '1536', label: '2K', sub: '1536px' },
-                       ].map(r => (
-                         <button
-                           key={r.value}
-                           onClick={() => setResolution(r.value)}
-                           className={`flex flex-col items-center p-2 rounded-xl transition-all ${
-                             resolution === r.value
-                               ? 'bg-primary/10 ring-2 ring-primary/30'
-                               : 'bg-gray-50 hover:bg-gray-100'
-                           }`}
-                         >
-                           <span className={`text-xs font-semibold ${resolution === r.value ? 'text-primary' : 'text-gray-700'}`}>
-                             {r.label}
-                           </span>
-                           <span className={`text-[9px] ${resolution === r.value ? 'text-primary/70' : 'text-gray-400'}`}>
-                             {r.sub}
-                           </span>
-                         </button>
-                       ))}
-                    </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { value: '1:1', icon: 'aspect-square' },
+                      { value: '4:3', icon: 'aspect-4-3' },
+                      { value: '3:4', icon: 'aspect-3-4' },
+                      { value: '16:9', icon: 'aspect-wide' },
+                      { value: '9:16', icon: 'aspect-tall' },
+                      { value: '3:2', icon: 'aspect-3-2' },
+                      { value: '2:3', icon: 'aspect-2-3' },
+                      { value: '21:9', icon: 'aspect-ultra' },
+                    ].map(r => {
+                      const [w, h] = r.value.split(':').map(Number);
+                      const ratio = w / h;
+                      const boxW = ratio >= 1 ? 20 : 20 * ratio;
+                      const boxH = ratio >= 1 ? 20 / ratio : 20;
+                      return (
+                        <button
+                          key={r.value}
+                          onClick={() => setAspectRatio(r.value)}
+                          className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${aspectRatio === r.value
+                            ? 'bg-primary/10 ring-2 ring-primary/30'
+                            : 'bg-gray-50 hover:bg-gray-100'
+                            }`}
+                        >
+                          <div
+                            className={`rounded-sm ${aspectRatio === r.value ? 'bg-primary' : 'bg-gray-400'}`}
+                            style={{ width: boxW, height: boxH }}
+                          />
+                          <span className={`text-[10px] font-medium ${aspectRatio === r.value ? 'text-primary' : 'text-gray-500'}`}>
+                            {r.value}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-             </div>
+
+                <div className="h-px bg-gray-100" />
+
+                {/* 分辨率 */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-4 h-4 rounded-full border-2 border-gray-400 flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700">分辨率</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { value: '512', label: '标清', sub: '512px' },
+                      { value: '768', label: '高清', sub: '768px' },
+                      { value: '1024', label: '1K', sub: '1024px' },
+                      { value: '1536', label: '2K', sub: '1536px' },
+                    ].map(r => (
+                      <button
+                        key={r.value}
+                        onClick={() => setResolution(r.value)}
+                        className={`flex flex-col items-center p-2 rounded-xl transition-all ${resolution === r.value
+                          ? 'bg-primary/10 ring-2 ring-primary/30'
+                          : 'bg-gray-50 hover:bg-gray-100'
+                          }`}
+                      >
+                        <span className={`text-xs font-semibold ${resolution === r.value ? 'text-primary' : 'text-gray-700'}`}>
+                          {r.label}
+                        </span>
+                        <span className={`text-[9px] ${resolution === r.value ? 'text-primary/70' : 'text-gray-400'}`}>
+                          {r.sub}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           <div className="flex items-center gap-2 w-full">
@@ -1833,11 +1860,10 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
                 <button
                   onClick={handleGenerate}
                   disabled={isProcessing || !prompt.trim()}
-                  className={`p-2 rounded-full transition-all duration-300 ${
-                    isProcessing || !prompt.trim()
-                     ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                     : 'bg-violet-500 hover:bg-violet-600 text-white shadow-md'
-                  }`}
+                  className={`p-2 rounded-full transition-all duration-300 ${isProcessing || !prompt.trim()
+                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                    : 'bg-violet-500 hover:bg-violet-600 text-white shadow-md'
+                    }`}
                 >
                   <ArrowRight size={18} />
                 </button>
@@ -2056,6 +2082,14 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
         />
       )}
 
+      <CanvasOnboarding
+        onSelectTemplate={handleTemplateSelect}
+        onClose={() => { }}
+      />
+      <CanvasOnboarding
+        onSelectTemplate={handleTemplateSelect}
+        onClose={() => { }}
+      />
     </div>
   );
 }
