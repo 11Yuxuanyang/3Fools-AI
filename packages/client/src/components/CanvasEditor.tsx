@@ -37,6 +37,7 @@ import * as ProjectService from '../services/projectService';
 import { ChatbotPanel } from './chatbot';
 import { generateId } from '../utils/id';
 import { Tooltip } from './ui';
+import { Logo } from './Logo';
 
 interface CanvasEditorProps {
   project: Project;
@@ -186,6 +187,58 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
 
     return () => clearTimeout(saveTimeout);
   }, [items, scale, pan, projectName, storyboard]);
+
+  // Check for pending prompt from homepage
+  useEffect(() => {
+    const pendingData = localStorage.getItem('pendingPrompt');
+    if (pendingData) {
+      try {
+        const { projectId, prompt: pendingPromptText } = JSON.parse(pendingData);
+        if (projectId === project.id && pendingPromptText) {
+          localStorage.removeItem('pendingPrompt');
+          // 设置 prompt 并触发生成
+          setPrompt(pendingPromptText);
+          // 延迟一帧后触发生成，确保状态已更新
+          setTimeout(async () => {
+            setIsProcessing(true);
+            try {
+              const base64Image = await API.generateImage({
+                prompt: pendingPromptText,
+                aspectRatio: '1:1',
+              });
+
+              const img = new window.Image();
+              img.src = base64Image;
+              img.onload = () => {
+                const displaySize = 400;
+                const newItem: CanvasItem = {
+                  id: generateId(),
+                  type: 'image',
+                  src: base64Image,
+                  x: -pan.x + (window.innerWidth / 2) - displaySize / 2,
+                  y: -pan.y + (window.innerHeight / 2) - displaySize / 2,
+                  width: displaySize,
+                  height: displaySize,
+                  zIndex: items.length + 1,
+                  prompt: pendingPromptText
+                };
+                setItems(prev => [...prev, newItem]);
+                setSelectedIds([newItem.id]);
+                setPrompt('');
+              };
+            } catch (error) {
+              console.error('Auto-generate failed:', error);
+              alert('生成失败，请检查后端服务是否正常运行。');
+            } finally {
+              setIsProcessing(false);
+            }
+          }, 100);
+        }
+      } catch (e) {
+        localStorage.removeItem('pendingPrompt');
+      }
+    }
+  }, [project.id]);
 
   // Focus name input when editing
   useEffect(() => {
@@ -1138,13 +1191,20 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
 
       {/* --- Top Bar --- */}
       <div className="fixed top-0 left-0 right-0 h-16 px-4 flex items-center justify-between z-40 pointer-events-none">
-        <div className="flex items-center gap-4 pointer-events-auto">
+        <div className="flex items-center gap-3 pointer-events-auto">
+          {/* Logo - 点击返回首页 */}
           <button
             onClick={onBack}
-            className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+            className="hover:opacity-80 transition-opacity"
+            title="返回首页"
           >
-            <ArrowLeft size={20} className="text-gray-600" />
+            <Logo size={28} showText={false} />
           </button>
+
+          {/* 分隔线 */}
+          <div className="w-px h-6 bg-gray-200" />
+
+          {/* 项目名称 */}
           <div className="flex flex-col">
             {isEditingName ? (
               <input

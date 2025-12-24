@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreVertical, ChevronDown, Trash2, Copy, Edit3, LogOut } from 'lucide-react';
+import { MoreVertical, ChevronDown, Trash2, Copy, Edit3, LogOut, ArrowUp, Sparkles, Palette, Wand2, Plus } from 'lucide-react';
 import { Project } from '../types';
 import * as ProjectService from '../services/projectService';
 import { LoginModal } from './LoginModal';
+import { Logo } from './Logo';
 
 interface User {
   id: string;
@@ -23,6 +24,7 @@ export function HomePage(_props: HomePageProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [promptInput, setPromptInput] = useState('');
 
   useEffect(() => {
     setProjects(ProjectService.getProjects());
@@ -50,12 +52,27 @@ export function HomePage(_props: HomePageProps) {
   };
 
   const handleOpenProject = (project: Project) => {
-    window.location.hash = `/project/${project.id}`;
+    window.open(`#/project/${project.id}`, '_blank');
   };
 
   const handleCreateProject = () => {
     const newProject = ProjectService.createProject();
-    window.location.hash = `/project/${newProject.id}`;
+    window.open(`#/project/${newProject.id}`, '_blank');
+  };
+
+  const handlePromptSubmit = (prompt?: string) => {
+    const inputPrompt = prompt || promptInput.trim();
+    if (!inputPrompt) {
+      handleCreateProject();
+      return;
+    }
+    const newProject = ProjectService.createProject();
+    // 将 prompt 存储到 localStorage（因为新窗口无法访问 sessionStorage）
+    localStorage.setItem('pendingPrompt', JSON.stringify({
+      projectId: newProject.id,
+      prompt: inputPrompt,
+    }));
+    window.open(`#/project/${newProject.id}`, '_blank');
   };
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
@@ -107,8 +124,8 @@ export function HomePage(_props: HomePageProps) {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="h-14 px-6 flex items-center justify-between border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold text-gray-900">三傻大闹AI圈</span>
+        <div className="flex items-center gap-3">
+          <Logo size={36} />
           <span className="px-2 py-0.5 text-[10px] font-medium text-gray-500 border border-gray-300 rounded-full uppercase tracking-wide">
             Beta
           </span>
@@ -170,56 +187,88 @@ export function HomePage(_props: HomePageProps) {
         </div>
       </header>
 
-      {/* Hero Section - Clean Minimal */}
-      <div className="relative pt-24 pb-20 px-6 overflow-hidden bg-[#fafafa]">
-        {/* Subtle Grid Background */}
-        <div
-          className="absolute inset-0 opacity-[0.4]"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, #e5e5e5 1px, transparent 1px),
-              linear-gradient(to bottom, #e5e5e5 1px, transparent 1px)
-            `,
-            backgroundSize: '48px 48px',
-          }}
-        />
-
-        {/* Center Focal Point - Single Refined Element */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div
-            className="w-[500px] h-[500px] border border-gray-200 rounded-full opacity-60"
-            style={{ animation: 'scaleIn 1.2s ease-out' }}
-          />
-        </div>
-
+      {/* Hero Section - Chat Input Style */}
+      <div className="relative pt-16 pb-12 px-6 bg-white">
         {/* Main Content */}
-        <div className="relative max-w-3xl mx-auto text-center">
+        <div className="relative max-w-3xl mx-auto">
           {/* Main Title */}
-          <h1 style={{ animation: 'fadeInUp 0.8s ease-out' }}>
-            <span className="block text-5xl md:text-6xl font-semibold text-gray-900 tracking-tight leading-tight">
-              用 AI 画出你的想法
+          <h1
+            className="text-center mb-10"
+            style={{ animation: 'fadeInUp 0.6s ease-out' }}
+          >
+            <span className="block text-4xl md:text-5xl font-semibold text-gray-900 tracking-tight">
+              想画点什么？
             </span>
           </h1>
 
-          {/* Subtitle */}
-          <p
-            className="mt-5 text-lg text-gray-500 font-normal"
-            style={{ animation: 'fadeInUp 0.8s ease-out 0.15s both' }}
-          >
-            输入描述，一键生成图片，自由编辑
-          </p>
-
-          {/* CTA Button integrated into hero */}
+          {/* Chat Input Box */}
           <div
-            className="mt-10"
-            style={{ animation: 'fadeInUp 0.8s ease-out 0.3s both' }}
+            className="relative"
+            style={{ animation: 'fadeInUp 0.6s ease-out 0.1s both' }}
+          >
+            <div className="bg-gray-100 rounded-2xl p-4 shadow-sm">
+              <textarea
+                value={promptInput}
+                onChange={(e) => setPromptInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handlePromptSubmit();
+                  }
+                }}
+                placeholder="描述你想要的画面，例如：一只穿着宇航服的猫咪在月球上散步..."
+                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg resize-none outline-none min-h-[80px] max-h-[200px]"
+                rows={2}
+              />
+
+              {/* Submit Button */}
+              <div className="flex justify-end mt-2">
+                <button
+                  onClick={() => handlePromptSubmit()}
+                  disabled={!promptInput.trim()}
+                  className={`p-3 rounded-xl transition-all ${
+                    promptInput.trim()
+                      ? 'bg-gray-900 text-white hover:bg-gray-800 cursor-pointer'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <ArrowUp size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Action Chips */}
+          <div
+            className="flex flex-wrap items-center justify-center gap-2 mt-6"
+            style={{ animation: 'fadeInUp 0.6s ease-out 0.2s both' }}
           >
             <button
-              onClick={handleCreateProject}
-              className="inline-flex items-center gap-2 px-8 py-3.5 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+              onClick={() => handlePromptSubmit('一只可爱的柴犬在樱花树下')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors"
             >
-              <Plus size={20} />
-              <span>开始创作</span>
+              <Sparkles size={16} className="text-amber-500" />
+              生成插画
+            </button>
+            <button
+              onClick={() => handlePromptSubmit('赛博朋克风格的未来城市夜景')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            >
+              <Palette size={16} className="text-violet-500" />
+              艺术创作
+            </button>
+            <button
+              onClick={() => handlePromptSubmit('简约现代的品牌 logo 设计')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            >
+              <Wand2 size={16} className="text-blue-500" />
+              设计灵感
+            </button>
+            <button
+              onClick={() => handleCreateProject()}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            >
+              空白画布
             </button>
           </div>
         </div>
@@ -236,51 +285,50 @@ export function HomePage(_props: HomePageProps) {
               transform: translateY(0);
             }
           }
-          @keyframes scaleIn {
-            from {
-              opacity: 0;
-              transform: scale(0.9);
-            }
-            to {
-              opacity: 0.6;
-              transform: scale(1);
-            }
-          }
         `}</style>
       </div>
 
       {/* Projects Section Header */}
       <div className="max-w-7xl mx-auto px-6 pt-8 pb-4 flex items-center justify-between">
-        <h2 className="text-lg font-medium text-gray-900">我的项目</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg font-medium text-gray-900">我的项目</h2>
+          <button
+            onClick={handleCreateProject}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <Plus size={16} />
+            <span>新建</span>
+          </button>
+        </div>
 
         <div className="relative">
-          <button
-            onClick={() => setShowSortMenu(!showSortMenu)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <span>{sortBy === 'recent' ? '最近编辑' : '按名称'}</span>
-            <ChevronDown size={16} />
-          </button>
+            <button
+              onClick={() => setShowSortMenu(!showSortMenu)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <span>{sortBy === 'recent' ? '最近编辑' : '按名称'}</span>
+              <ChevronDown size={16} />
+            </button>
 
-          {showSortMenu && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
-                <button
-                  onClick={() => { setSortBy('recent'); setShowSortMenu(false); }}
-                  className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'recent' ? 'text-gray-900 font-medium' : 'text-gray-600'}`}
-                >
-                  最近编辑
-                </button>
-                <button
-                  onClick={() => { setSortBy('name'); setShowSortMenu(false); }}
-                  className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'name' ? 'text-gray-900 font-medium' : 'text-gray-600'}`}
-                >
-                  按名称
-                </button>
-              </div>
-            </>
-          )}
+            {showSortMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
+                <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
+                  <button
+                    onClick={() => { setSortBy('recent'); setShowSortMenu(false); }}
+                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'recent' ? 'text-gray-900 font-medium' : 'text-gray-600'}`}
+                  >
+                    最近编辑
+                  </button>
+                  <button
+                    onClick={() => { setSortBy('name'); setShowSortMenu(false); }}
+                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 ${sortBy === 'name' ? 'text-gray-900 font-medium' : 'text-gray-600'}`}
+                  >
+                    按名称
+                  </button>
+                </div>
+              </>
+            )}
         </div>
       </div>
 
@@ -303,10 +351,10 @@ export function HomePage(_props: HomePageProps) {
                 <div
                   key={project.id}
                   onClick={() => handleOpenProject(project)}
-                  className="group relative bg-white border-2 border-gray-100 hover:border-violet-200 rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-lg"
+                  className={`group relative bg-white border-2 border-gray-100 hover:border-gray-300 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg ${activeMenu === project.id ? 'z-30' : ''}`}
                 >
                   {/* Card Preview */}
-                  <div className="aspect-[4/3] relative bg-gray-50 overflow-hidden">
+                  <div className="aspect-[4/3] relative bg-gray-50 overflow-hidden rounded-t-xl">
                     {/* Dot Grid Pattern */}
                     <div
                       className="absolute inset-0"
@@ -358,8 +406,8 @@ export function HomePage(_props: HomePageProps) {
 
                       {activeMenu === project.id && (
                         <>
-                          <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
-                          <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setActiveMenu(null); }} />
+                          <div className="absolute left-0 top-full mt-1 w-40 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50">
                             <button
                               onClick={(e) => handleDuplicate(e, project.id)}
                               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
