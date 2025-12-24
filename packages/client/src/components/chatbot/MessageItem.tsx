@@ -1,5 +1,6 @@
 import React from 'react';
-import { Copy, Check, Bot } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
+import { Logo } from '../Logo';
 import { ChatMessage } from '@/types';
 
 interface MessageItemProps {
@@ -120,8 +121,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
     <div className="animate-in fade-in slide-in-from-left duration-200">
       {/* AI 头像和名称 */}
       <div className="flex items-center gap-2 mb-2">
-        <Bot size={18} className="text-purple-500" />
-        <span className="text-sm font-medium text-gray-500">星流</span>
+        <Logo size={20} showText={false} />
+        <span className="text-sm font-medium text-gray-500">三傻</span>
       </div>
 
       {/* 消息内容 */}
