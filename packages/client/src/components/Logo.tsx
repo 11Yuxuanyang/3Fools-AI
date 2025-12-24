@@ -75,19 +75,20 @@ export function Logo({ size = 32, showText = true, className = '' }: LogoProps) 
           <rect x="6" y="13" width="2" height="2" fill="#7C3AED" />
           <rect x="24" y="13" width="2" height="2" fill="#7C3AED" />
           <rect x="8" y="15" width="16" height="1" fill="#7C3AED" />
-          {/* 眯眯眼 - 坏笑 */}
-          <rect x="8" y="6" width="2" height="1" fill="#1a1a1a" />
-          <rect x="10" y="5" width="3" height="1" fill="#1a1a1a" />
-          <rect x="13" y="6" width="1" height="1" fill="#1a1a1a" />
-          <rect x="18" y="6" width="1" height="1" fill="#1a1a1a" />
-          <rect x="19" y="5" width="3" height="1" fill="#1a1a1a" />
-          <rect x="22" y="6" width="2" height="1" fill="#1a1a1a" />
-          {/* 嘴 - 坏笑 */}
-          <rect x="10" y="10" width="1" height="1" fill="#1a1a1a" />
-          <rect x="11" y="11" width="10" height="2" fill="#1a1a1a" />
-          <rect x="21" y="10" width="1" height="1" fill="#1a1a1a" />
-          {/* 舌头 */}
-          <rect x="14" y="13" width="4" height="2" fill="#F472B6" />
+          {/* 大圆眼 - 开心 */}
+          <rect x="8" y="5" width="5" height="4" fill="#fff" />
+          <rect x="19" y="5" width="5" height="4" fill="#fff" />
+          <rect x="10" y="6" width="3" height="3" fill="#1a1a1a" />
+          <rect x="20" y="6" width="3" height="3" fill="#1a1a1a" />
+          {/* 高光 */}
+          <rect x="9" y="5" width="2" height="2" fill="#fff" />
+          <rect x="20" y="5" width="2" height="2" fill="#fff" />
+          {/* 腮红 */}
+          <rect x="7" y="9" width="2" height="1" fill="#F9A8D4" />
+          <rect x="23" y="9" width="2" height="1" fill="#F9A8D4" />
+          {/* 嘴 - 大笑 */}
+          <rect x="12" y="11" width="8" height="2" fill="#1a1a1a" />
+          <rect x="13" y="10" width="6" height="1" fill="#1a1a1a" />
         </g>
       </svg>
 
