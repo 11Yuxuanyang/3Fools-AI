@@ -1,5 +1,5 @@
 import React from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Bot } from 'lucide-react';
 import { ChatMessage } from '@/types';
 
 interface MessageItemProps {
@@ -119,13 +119,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
   return (
     <div className="animate-in fade-in slide-in-from-left duration-200">
       {/* AI 头像和名称 */}
-      <div className="flex items-center gap-2.5 mb-2">
-        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-md shadow-purple-200">
-          <svg viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-          </svg>
-        </div>
-        <span className="text-sm font-medium text-gray-600">星流</span>
+      <div className="flex items-center gap-2 mb-2">
+        <Bot size={18} className="text-purple-500" />
+        <span className="text-sm font-medium text-gray-500">星流</span>
       </div>
 
       {/* 消息内容 */}
