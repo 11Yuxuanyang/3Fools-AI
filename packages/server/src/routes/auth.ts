@@ -103,7 +103,11 @@ authRouter.get('/wechat/callback', async (req: Request, res: Response) => {
       `&grant_type=authorization_code`;
 
     const tokenRes = await fetch(tokenUrl);
-    const tokenData = await tokenRes.json();
+    const tokenData = await tokenRes.json() as {
+      errcode?: number;
+      access_token?: string;
+      openid?: string;
+    };
 
     if (tokenData.errcode) {
       console.error('微信获取 token 失败:', tokenData);
@@ -119,9 +123,9 @@ authRouter.get('/wechat/callback', async (req: Request, res: Response) => {
       `&openid=${openid}`;
 
     const userRes = await fetch(userUrl);
-    const userData: WechatUser = await userRes.json();
+    const userData = await userRes.json() as WechatUser & { errcode?: number };
 
-    if ((userData as any).errcode) {
+    if (userData.errcode) {
       console.error('微信获取用户信息失败:', userData);
       loginState.status = 'expired';
       return res.redirect(`${config.corsOrigin}?error=wechat_error`);

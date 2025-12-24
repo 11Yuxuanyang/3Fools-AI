@@ -120,3 +120,7 @@ export interface ChatMessage {
   timestamp: number;
   isStreaming?: boolean;
 }
+
+// ============ Generation Types ============
+
+export type GenerationModel = 'default' | 'fast' | 'quality';

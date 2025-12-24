@@ -2,18 +2,12 @@
  * Chat API 路由
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { getChatProvider } from '../providers/chat-index.js';
 import { ChatMessageInput } from '../providers/chat-base.js';
+import { asyncHandler, validateBody, schemas } from '../middleware/index.js';
 
 export const chatRouter = Router();
-
-// 异步错误处理包装器
-const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-};
 
 /**
  * 构建系统提示词
@@ -46,57 +40,71 @@ function buildSystemPrompt(webSearchEnabled: boolean): string {
  * POST /api/chat
  * 聊天对话端点
  */
-chatRouter.post('/', asyncHandler(async (req: Request, res: Response) => {
-  const { messages, webSearchEnabled, stream } = req.body;
+chatRouter.post(
+  '/',
+  validateBody(schemas.chatMessage),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { messages, webSearchEnabled, stream } = req.body;
 
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({
-      success: false,
-      error: '缺少或无效的 messages 参数',
-    });
-  }
+    const provider = getChatProvider();
 
-  const provider = getChatProvider();
+    // 构建系统提示词
+    const systemPrompt = buildSystemPrompt(webSearchEnabled);
 
-  // 构建系统提示词
-  const systemPrompt = buildSystemPrompt(webSearchEnabled);
+    // 添加系统消息
+    const fullMessages: ChatMessageInput[] = [{ role: 'system', content: systemPrompt }, ...messages];
 
-  // 添加系统消息
-  const fullMessages: ChatMessageInput[] = [
-    { role: 'system', content: systemPrompt },
-    ...messages,
-  ];
+    if (stream) {
+      // 流式响应
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
 
-  if (stream) {
-    // 流式响应
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
+      // 处理客户端断开连接
+      let isClientConnected = true;
+      res.on('close', () => {
+        isClientConnected = false;
+      });
 
-    try {
-      for await (const chunk of provider.chatStream({ messages: fullMessages, webSearchEnabled })) {
-        res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+      // 心跳定时器
+      const heartbeat = setInterval(() => {
+        if (isClientConnected) {
+          res.write(': heartbeat\n\n');
+        }
+      }, 15000);
+
+      try {
+        for await (const chunk of provider.chatStream({ messages: fullMessages, webSearchEnabled })) {
+          if (!isClientConnected) break;
+          res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+        }
+        if (isClientConnected) {
+          res.write('data: [DONE]\n\n');
+        }
+      } catch (error) {
+        if (isClientConnected) {
+          const errorMessage = error instanceof Error ? error.message : '流式响应失败';
+          res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
+        }
+      } finally {
+        clearInterval(heartbeat);
       }
-      res.write('data: [DONE]\n\n');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '流式响应失败';
-      res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
-    }
-    res.end();
-  } else {
-    // 普通响应
-    const response = await provider.chat({ messages: fullMessages, webSearchEnabled });
+      res.end();
+    } else {
+      // 普通响应
+      const response = await provider.chat({ messages: fullMessages, webSearchEnabled });
 
-    res.json({
-      success: true,
-      data: {
-        message: response.message,
-        usage: response.usage,
-      },
-    });
-  }
-}));
+      res.json({
+        success: true,
+        data: {
+          message: response.message,
+          usage: response.usage,
+        },
+      });
+    }
+  })
+);
 
 /**
  * GET /api/chat/health

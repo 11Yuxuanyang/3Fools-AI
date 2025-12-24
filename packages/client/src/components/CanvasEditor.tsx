@@ -167,8 +167,6 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
     setItems(prev => [...prev, ...newItems]);
   };
 
-  // Import CanvasOnboarding
-  const { CanvasOnboarding } = require('./CanvasOnboarding');
 
   // Auto-save effect
   useEffect(() => {
@@ -448,7 +446,6 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       const base64Image = await API.generateImage({
         prompt,
         aspectRatio,
-        options: { resolution },
       });
 
       const img = new window.Image();

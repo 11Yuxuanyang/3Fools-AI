@@ -32,7 +32,11 @@ export class CustomChatProvider implements ChatProvider {
       throw new Error(`Chat API failed: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as {
+      choices?: Array<{ message?: { content?: string } }>;
+      message?: string;
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
 
     return {
       message: data.choices?.[0]?.message?.content || data.message || '',

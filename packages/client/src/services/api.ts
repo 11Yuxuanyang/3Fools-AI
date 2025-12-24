@@ -5,27 +5,108 @@
 
 const API_BASE = '/api';
 
+// API 错误类
+export class APIError extends Error {
+  statusCode: number;
+  code?: string;
+
+  constructor(message: string, statusCode: number = 500, code?: string) {
+    super(message);
+    this.name = 'APIError';
+    this.statusCode = statusCode;
+    this.code = code;
+  }
+
+  static isAPIError(error: unknown): error is APIError {
+    return error instanceof APIError;
+  }
+}
+
 interface APIResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
+  code?: string;
 }
 
-async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    ...options,
-  });
+interface RequestOptions extends RequestInit {
+  timeout?: number;
+  retries?: number;
+  retryDelay?: number;
+}
 
-  const result: APIResponse<T> = await response.json();
+/**
+ * 延迟函数
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  if (!result.success) {
-    throw new Error(result.error || '请求失败');
+/**
+ * 带超时和重试的请求函数
+ */
+async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  const { timeout = 30000, retries = 0, retryDelay = 1000, ...fetchOptions } = options;
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+        ...fetchOptions,
+      });
+
+      clearTimeout(timeoutId);
+
+      // 处理非 JSON 响应
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        if (!response.ok) {
+          throw new APIError('服务器返回了无效的响应', response.status);
+        }
+        return (await response.text()) as unknown as T;
+      }
+
+      const result: APIResponse<T> = await response.json();
+
+      if (!result.success) {
+        throw new APIError(result.error || '请求失败', response.status, result.code);
+      }
+
+      return result.data as T;
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          lastError = new APIError('请求超时', 408, 'TIMEOUT');
+        } else if (APIError.isAPIError(error)) {
+          // 不重试客户端错误 (4xx)
+          if (error.statusCode >= 400 && error.statusCode < 500) {
+            throw error;
+          }
+          lastError = error;
+        } else {
+          lastError = new APIError(error.message, 500);
+        }
+      }
+
+      // 如果还有重试次数，等待后重试
+      if (attempt < retries) {
+        await delay(retryDelay * (attempt + 1)); // 指数退避
+        continue;
+      }
+    }
   }
 
-  return result.data as T;
+  throw lastError || new APIError('请求失败', 500);
 }
 
 /**
@@ -39,6 +120,8 @@ export async function generateImage(params: {
   const { image } = await request<{ image: string }>('/ai/generate', {
     method: 'POST',
     body: JSON.stringify(params),
+    timeout: 60000, // AI 生成需要更长时间
+    retries: 1,
   });
   return image;
 }
@@ -54,6 +137,8 @@ export async function editImage(params: {
   const { image } = await request<{ image: string }>('/ai/edit', {
     method: 'POST',
     body: JSON.stringify(params),
+    timeout: 60000,
+    retries: 1,
   });
   return image;
 }
@@ -61,13 +146,12 @@ export async function editImage(params: {
 /**
  * 放大图片
  */
-export async function upscaleImage(params: {
-  image: string;
-  resolution?: '2K' | '4K';
-}): Promise<string> {
+export async function upscaleImage(params: { image: string; resolution?: '2K' | '4K' }): Promise<string> {
   const { image } = await request<{ image: string }>('/ai/upscale', {
     method: 'POST',
     body: JSON.stringify(params),
+    timeout: 120000, // 放大可能需要更长时间
+    retries: 1,
   });
   return image;
 }
@@ -79,8 +163,7 @@ export async function getConfig(): Promise<{
   provider: string;
   defaultModel: string;
 }> {
-  const response = await fetch(`${API_BASE}/config`);
-  return response.json();
+  return request('/config', { method: 'GET' });
 }
 
 /**
@@ -88,7 +171,7 @@ export async function getConfig(): Promise<{
  */
 export async function healthCheck(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE}/health`);
+    const response = await fetch(`${API_BASE}/health`, { method: 'GET' });
     const data = await response.json();
     return data.status === 'ok';
   } catch {
@@ -118,66 +201,96 @@ export interface ChatParams {
 export async function chat(params: ChatParams): Promise<string> {
   const { message } = await request<{ message: string }>('/chat', {
     method: 'POST',
-    body: JSON.stringify(params),
+    body: JSON.stringify({ ...params, stream: false }),
+    timeout: 60000,
   });
   return message;
 }
 
 /**
  * 发送聊天消息（流式）
+ * 支持 AbortController 取消请求
  */
 export async function* chatStream(
   params: ChatParams,
-  onChunk?: (chunk: string) => void
+  options?: { signal?: AbortSignal; onChunk?: (chunk: string) => void }
 ): AsyncGenerator<string, void, unknown> {
+  const { signal, onChunk } = options || {};
+
   const response = await fetch(`${API_BASE}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...params, stream: true }),
+    signal,
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || '请求失败');
+    let errorMessage = '请求失败';
+    try {
+      const error = await response.json();
+      errorMessage = error.error || errorMessage;
+    } catch {
+      // 忽略 JSON 解析错误
+    }
+    throw new APIError(errorMessage, response.status);
   }
 
   const reader = response.body?.getReader();
   const decoder = new TextDecoder();
 
   if (!reader) {
-    throw new Error('无法读取响应');
+    throw new APIError('无法读取响应', 500);
   }
 
   let buffer = '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+      for (const line of lines) {
+        const trimmedLine = line.trim();
 
-      const data = trimmedLine.slice(6);
-      if (data === '[DONE]') return;
+        // 忽略心跳和空行
+        if (!trimmedLine || trimmedLine.startsWith(':')) continue;
+        if (!trimmedLine.startsWith('data: ')) continue;
 
-      try {
-        const json = JSON.parse(data);
-        if (json.error) {
-          throw new Error(json.error);
+        const data = trimmedLine.slice(6);
+        if (data === '[DONE]') return;
+
+        try {
+          const json = JSON.parse(data);
+          if (json.error) {
+            throw new APIError(json.error, 500);
+          }
+          if (json.content) {
+            onChunk?.(json.content);
+            yield json.content;
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) continue;
+          throw e;
         }
-        if (json.content) {
-          onChunk?.(json.content);
-          yield json.content;
-        }
-      } catch (e) {
-        if (e instanceof SyntaxError) continue;
-        throw e;
       }
     }
+  } finally {
+    reader.releaseLock();
   }
+}
+
+/**
+ * 创建可取消的聊天请求
+ */
+export function createChatRequest(params: ChatParams, onChunk?: (chunk: string) => void) {
+  const controller = new AbortController();
+
+  return {
+    generator: chatStream(params, { signal: controller.signal, onChunk }),
+    cancel: () => controller.abort(),
+  };
 }

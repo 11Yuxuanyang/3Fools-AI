@@ -1,109 +1,80 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { getProvider } from '../providers/index.js';
+import { asyncHandler, validateBody, schemas, HttpError } from '../middleware/index.js';
 
 export const aiRouter = Router();
-
-// 异步错误处理包装器
-const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-};
 
 /**
  * POST /api/ai/generate
  * 生成图片
  */
-aiRouter.post('/generate', asyncHandler(async (req: Request, res: Response) => {
-  const { prompt, model, aspectRatio, options } = req.body;
+aiRouter.post(
+  '/generate',
+  validateBody(schemas.generateImage),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { prompt, model, aspectRatio } = req.body;
 
-  if (!prompt) {
-    return res.status(400).json({
-      success: false,
-      error: '缺少 prompt 参数',
+    const provider = getProvider();
+    const image = await provider.generateImage({
+      prompt,
+      model,
+      aspectRatio,
     });
-  }
 
-  const provider = getProvider();
-  const image = await provider.generateImage({
-    prompt,
-    model,
-    aspectRatio,
-    options,
-  });
-
-  res.json({
-    success: true,
-    data: { image },
-  });
-}));
+    res.json({
+      success: true,
+      data: { image },
+    });
+  })
+);
 
 /**
  * POST /api/ai/edit
  * 编辑图片
  */
-aiRouter.post('/edit', asyncHandler(async (req: Request, res: Response) => {
-  const { image, prompt, model, options } = req.body;
+aiRouter.post(
+  '/edit',
+  validateBody(schemas.editImage),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { image, prompt, model } = req.body;
 
-  if (!image) {
-    return res.status(400).json({
-      success: false,
-      error: '缺少 image 参数',
+    const provider = getProvider();
+    const resultImage = await provider.editImage({
+      image,
+      prompt,
+      model,
     });
-  }
 
-  if (!prompt) {
-    return res.status(400).json({
-      success: false,
-      error: '缺少 prompt 参数',
+    res.json({
+      success: true,
+      data: { image: resultImage },
     });
-  }
-
-  const provider = getProvider();
-  const resultImage = await provider.editImage({
-    image,
-    prompt,
-    model,
-    options,
-  });
-
-  res.json({
-    success: true,
-    data: { image: resultImage },
-  });
-}));
+  })
+);
 
 /**
  * POST /api/ai/upscale
  * 放大图片
  */
-aiRouter.post('/upscale', asyncHandler(async (req: Request, res: Response) => {
-  const { image, resolution, options } = req.body;
+aiRouter.post(
+  '/upscale',
+  validateBody(schemas.upscaleImage),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { image } = req.body;
 
-  if (!image) {
-    return res.status(400).json({
-      success: false,
-      error: '缺少 image 参数',
+    const provider = getProvider();
+
+    if (!provider.upscaleImage) {
+      throw HttpError.badRequest('当前提供商不支持图片放大功能', 'UNSUPPORTED_OPERATION');
+    }
+
+    const resultImage = await provider.upscaleImage({
+      image,
     });
-  }
 
-  const provider = getProvider();
-
-  if (!provider.upscaleImage) {
-    return res.status(501).json({
-      success: false,
-      error: '当前提供商不支持图片放大功能',
+    res.json({
+      success: true,
+      data: { image: resultImage },
     });
-  }
-
-  const resultImage = await provider.upscaleImage({
-    image,
-    resolution,
-    options,
-  });
-
-  res.json({
-    success: true,
-    data: { image: resultImage },
-  });
-}));
+  })
+);
