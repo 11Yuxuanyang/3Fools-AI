@@ -1642,105 +1642,23 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
 
         {/* --- Empty State / Onboarding --- */}
         {items.length === 0 && !isProcessing && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-0">
-            <div className="max-w-xl w-full mx-auto pointer-events-auto">
-              {/* 主标题区域 */}
-              <div className="mb-8">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-violet-100 to-fuchsia-100 rounded-full mb-4">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-xs font-medium text-violet-700">画布已就绪</span>
-                </div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-                  想画点什么？
-                </h2>
-                <p className="text-gray-500 text-sm">
-                  在下方输入你的想法，或者试试这些灵感
-                </p>
-              </div>
-
-              {/* 灵感卡片 */}
-              <div className="grid grid-cols-3 gap-3">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
+            <div className="pointer-events-auto text-center">
+              <p className="text-gray-400 text-sm mb-4">试试这些</p>
+              <div className="flex gap-2">
                 {[
-                  {
-                    title: '霓虹都市',
-                    desc: '赛博朋克风格',
-                    prompt: '一座充满霓虹灯和飞行汽车的未来城市，雨夜，倒影',
-                    gradient: 'from-cyan-500 to-blue-600',
-                    icon: (
-                      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
-                        <rect x="8" y="8" width="8" height="12" rx="1" />
-                        <path d="M10 12h4M10 15h4" />
-                      </svg>
-                    )
-                  },
-                  {
-                    title: '萌系角色',
-                    desc: '3D卡通风格',
-                    prompt: '一只圆滚滚的小猫咪，大眼睛，毛茸茸，3D渲染，柔和光线',
-                    gradient: 'from-pink-500 to-rose-500',
-                    icon: (
-                      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <circle cx="12" cy="12" r="8" />
-                        <circle cx="9" cy="10" r="1.5" fill="currentColor" />
-                        <circle cx="15" cy="10" r="1.5" fill="currentColor" />
-                        <path d="M9 15c1.5 1 4.5 1 6 0" strokeLinecap="round" />
-                      </svg>
-                    )
-                  },
-                  {
-                    title: '梦境奇观',
-                    desc: '超现实主义',
-                    prompt: '漂浮在云端的古老图书馆，藤蔓缠绕，光线穿透，魔幻氛围',
-                    gradient: 'from-violet-500 to-purple-600',
-                    icon: (
-                      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9" />
-                        <path d="M12 3c2.5 0 5 4 5 9s-2.5 9-5 9" />
-                        <path d="M3 12h18" />
-                        <circle cx="18" cy="6" r="3" />
-                      </svg>
-                    )
-                  }
-                ].map((card, i) => (
+                  { label: '未来城市', prompt: '赛博朋克风格的未来城市夜景，霓虹灯，雨天' },
+                  { label: '毛绒玩具', prompt: '一只毛茸茸的小熊玩偶，柔软材质，暖色调' },
+                  { label: '水彩风景', prompt: '江南水乡的水彩画，朦胧，意境' },
+                ].map((item, i) => (
                   <button
                     key={i}
-                    onClick={() => setPrompt(card.prompt)}
-                    className="group relative overflow-hidden rounded-2xl bg-white border border-gray-100 p-4 text-left transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-transparent"
+                    onClick={() => setPrompt(item.prompt)}
+                    className="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-full hover:border-gray-300 hover:bg-gray-50 transition-colors"
                   >
-                    {/* 悬停时的渐变背景 */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-
-                    {/* 内容 */}
-                    <div className="relative z-10">
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.gradient} text-white flex items-center justify-center mb-3 group-hover:bg-white/20 transition-colors`}>
-                        {card.icon}
-                      </div>
-                      <h3 className="font-semibold text-gray-800 group-hover:text-white transition-colors text-sm mb-0.5">
-                        {card.title}
-                      </h3>
-                      <p className="text-xs text-gray-400 group-hover:text-white/70 transition-colors">
-                        {card.desc}
-                      </p>
-                    </div>
+                    {item.label}
                   </button>
                 ))}
-              </div>
-
-              {/* 底部提示 */}
-              <div className="mt-6 flex items-center justify-center gap-4 text-xs text-gray-400">
-                <span className="flex items-center gap-1.5">
-                  <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">V</kbd>
-                  <span>选择</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">H</kbd>
-                  <span>平移</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">⌘V</kbd>
-                  <span>粘贴图片</span>
-                </span>
               </div>
             </div>
           </div>

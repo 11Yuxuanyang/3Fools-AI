@@ -170,11 +170,11 @@ export function HomePage(_props: HomePageProps) {
         </div>
       </header>
 
-      {/* Hero Section - With Color Accents */}
+      {/* Hero Section - Clean Minimal */}
       <div className="relative pt-24 pb-20 px-6 overflow-hidden bg-[#fafafa]">
         {/* Subtle Grid Background */}
         <div
-          className="absolute inset-0 opacity-[0.35]"
+          className="absolute inset-0 opacity-[0.4]"
           style={{
             backgroundImage: `
               linear-gradient(to right, #e5e5e5 1px, transparent 1px),
@@ -184,28 +184,10 @@ export function HomePage(_props: HomePageProps) {
           }}
         />
 
-        {/* Colored Accent Shapes */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Orange circle - top left */}
-          <div
-            className="absolute -top-10 -left-10 w-40 h-40 bg-orange-400/20 rounded-full blur-2xl"
-            style={{ animation: 'pulse 4s ease-in-out infinite' }}
-          />
-          {/* Blue circle - right */}
-          <div
-            className="absolute top-1/3 -right-10 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl"
-            style={{ animation: 'pulse 5s ease-in-out infinite 1s' }}
-          />
-          {/* Small solid accent dots */}
-          <div className="absolute top-[20%] left-[15%] w-2 h-2 bg-orange-400 rounded-full opacity-60" />
-          <div className="absolute top-[30%] right-[20%] w-1.5 h-1.5 bg-blue-500 rounded-full opacity-50" />
-          <div className="absolute bottom-[25%] left-[25%] w-1.5 h-1.5 bg-emerald-500 rounded-full opacity-50" />
-        </div>
-
-        {/* Center Circle */}
+        {/* Center Focal Point - Single Refined Element */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div
-            className="w-[450px] h-[450px] border border-gray-200 rounded-full opacity-50"
+            className="w-[500px] h-[500px] border border-gray-200 rounded-full opacity-60"
             style={{ animation: 'scaleIn 1.2s ease-out' }}
           />
         </div>
@@ -215,7 +197,7 @@ export function HomePage(_props: HomePageProps) {
           {/* Main Title */}
           <h1 style={{ animation: 'fadeInUp 0.8s ease-out' }}>
             <span className="block text-5xl md:text-6xl font-semibold text-gray-900 tracking-tight leading-tight">
-              用 AI 画出你的<span className="text-orange-500">想法</span>
+              用 AI 画出你的想法
             </span>
           </h1>
 
@@ -227,14 +209,14 @@ export function HomePage(_props: HomePageProps) {
             输入描述，一键生成图片，自由编辑
           </p>
 
-          {/* CTA Button */}
+          {/* CTA Button integrated into hero */}
           <div
             className="mt-10"
             style={{ animation: 'fadeInUp 0.8s ease-out 0.3s both' }}
           >
             <button
               onClick={handleCreateProject}
-              className="inline-flex items-center gap-2 px-8 py-3.5 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-medium transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-orange-500/25"
+              className="inline-flex items-center gap-2 px-8 py-3.5 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <Plus size={20} />
               <span>开始创作</span>
@@ -260,13 +242,9 @@ export function HomePage(_props: HomePageProps) {
               transform: scale(0.9);
             }
             to {
-              opacity: 0.5;
+              opacity: 0.6;
               transform: scale(1);
             }
-          }
-          @keyframes pulse {
-            0%, 100% { opacity: 0.2; transform: scale(1); }
-            50% { opacity: 0.3; transform: scale(1.05); }
           }
         `}</style>
       </div>
