@@ -10,64 +10,38 @@ export function Logo({ size = 32, showText = true, className = '' }: LogoProps) 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <svg
-        width={size * 1.1}
+        width={size}
         height={size}
-        viewBox="0 0 22 20"
+        viewBox="0 0 32 32"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        shapeRendering="crispEdges"
       >
-        {/* === 傻一：左下橙色像素圆 === */}
+        {/* 圆角矩形背景 */}
+        <rect width="32" height="32" rx="8" fill="#8B5CF6" />
+
+        {/* 三个小幽灵三角排列 */}
+
+        {/* 顶部幽灵 - 眨眼 */}
         <g>
-          {/* 圆形轮廓 */}
-          <rect x="2" y="11" width="4" height="1" fill="#F97316" />
-          <rect x="1" y="12" width="6" height="1" fill="#F97316" />
-          <rect x="0" y="13" width="8" height="4" fill="#F97316" />
-          <rect x="1" y="17" width="6" height="1" fill="#F97316" />
-          <rect x="2" y="18" width="4" height="1" fill="#F97316" />
-          {/* 翻白眼 */}
-          <rect x="1" y="13" width="2" height="2" fill="#fff" />
-          <rect x="5" y="13" width="2" height="2" fill="#fff" />
-          <rect x="1" y="13" width="1" height="1" fill="#1a1a1a" />
-          <rect x="5" y="13" width="1" height="1" fill="#1a1a1a" />
-          {/* 歪嘴 */}
-          <rect x="2" y="16" width="2" height="1" fill="#1a1a1a" />
-          <rect x="5" y="15" width="1" height="1" fill="#1a1a1a" />
+          <path d="M16 5C13 5 11 7 11 10V14C11 14 11.5 13 12.5 14C13.5 15 14 14 14.5 14C15 14 15.5 15 16 14C16.5 15 17 14 17.5 14C18 14 18.5 15 19.5 14C20.5 13 21 14 21 14V10C21 7 19 5 16 5Z" fill="white"/>
+          <circle cx="14" cy="9" r="1" fill="#8B5CF6"/>
+          <path d="M17 8.5Q18 8 19 9" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round"/>
         </g>
 
-        {/* === 傻三：右下青色像素圆 === */}
+        {/* 左下幽灵 - 吐舌 */}
         <g>
-          <rect x="16" y="11" width="4" height="1" fill="#06B6D4" />
-          <rect x="15" y="12" width="6" height="1" fill="#06B6D4" />
-          <rect x="14" y="13" width="8" height="4" fill="#06B6D4" />
-          <rect x="15" y="17" width="6" height="1" fill="#06B6D4" />
-          <rect x="16" y="18" width="4" height="1" fill="#06B6D4" />
-          {/* 惊恐大眼 */}
-          <rect x="14" y="13" width="3" height="3" fill="#fff" />
-          <rect x="19" y="13" width="3" height="3" fill="#fff" />
-          <rect x="15" y="14" width="2" height="2" fill="#1a1a1a" />
-          <rect x="19" y="14" width="2" height="2" fill="#1a1a1a" />
-          {/* 方嘴 */}
-          <rect x="16" y="17" width="3" height="2" fill="#1a1a1a" />
+          <path d="M8 15C5.5 15 4 17 4 19.5V23C4 23 4.5 22 5.5 23C6.5 24 7 23 7.5 23C8 23 8.5 24 9 23C9.5 24 10 23 10.5 23C11 23 11.5 24 12 23V19.5C12 17 10.5 15 8 15Z" fill="white"/>
+          <circle cx="6.5" cy="19" r="1" fill="#8B5CF6"/>
+          <circle cx="9.5" cy="19" r="1" fill="#8B5CF6"/>
+          <ellipse cx="8" cy="22" rx="1.5" ry="1" fill="#F472B6"/>
         </g>
 
-        {/* === 傻二：顶部紫色像素圆 === */}
+        {/* 右下幽灵 - 惊讶 */}
         <g>
-          <rect x="8" y="0" width="6" height="1" fill="#8B5CF6" />
-          <rect x="6" y="1" width="10" height="1" fill="#8B5CF6" />
-          <rect x="5" y="2" width="12" height="6" fill="#8B5CF6" />
-          <rect x="6" y="8" width="10" height="1" fill="#8B5CF6" />
-          <rect x="8" y="9" width="6" height="1" fill="#8B5CF6" />
-          {/* 得意眯眯眼 ^ ^ */}
-          <rect x="6" y="4" width="1" height="1" fill="#1a1a1a" />
-          <rect x="7" y="3" width="1" height="1" fill="#1a1a1a" />
-          <rect x="8" y="4" width="1" height="1" fill="#1a1a1a" />
-          <rect x="13" y="4" width="1" height="1" fill="#1a1a1a" />
-          <rect x="14" y="3" width="1" height="1" fill="#1a1a1a" />
-          <rect x="15" y="4" width="1" height="1" fill="#1a1a1a" />
-          {/* 坏笑+吐舌 */}
-          <rect x="8" y="6" width="6" height="1" fill="#1a1a1a" />
-          <rect x="9" y="7" width="4" height="2" fill="#F472B6" />
+          <path d="M24 15C21.5 15 20 17 20 19.5V23C20 23 20.5 22 21.5 23C22.5 24 23 23 23.5 23C24 23 24.5 24 25 23C25.5 24 26 23 26.5 23C27 23 27.5 24 28 23V19.5C28 17 26.5 15 24 15Z" fill="white"/>
+          <circle cx="22.5" cy="19" r="1.2" fill="#8B5CF6"/>
+          <circle cx="25.5" cy="19" r="1.2" fill="#8B5CF6"/>
+          <ellipse cx="24" cy="22" rx="1" ry="1.2" fill="#8B5CF6"/>
         </g>
       </svg>
 
