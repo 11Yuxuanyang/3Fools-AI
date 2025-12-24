@@ -16,6 +16,24 @@ interface HomePageProps {
   onCreateProject?: () => void;
 }
 
+const typingPhrases = [
+  '一只在月球上弹吉他的猫',
+  '赛博朋克风格的东京街头',
+  '水彩风格的春日樱花',
+  '像素风的复古游戏场景',
+  '梵高风格的星空下的咖啡馆',
+  '穿着宇航服的柴犬在火星散步',
+  '蒸汽朋克机械蝴蝶',
+  '吉卜力风格的夏日乡村',
+  '霓虹灯下的雨夜便利店',
+  '漂浮在云端的水晶城堡',
+  '古风少女在竹林中抚琴',
+  '极简主义的日式枯山水',
+  '超现实主义的融化时钟',
+  '可爱的机器人在花园浇水',
+  '北欧风格的温馨小木屋',
+];
+
 export function HomePage(_props: HomePageProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent');
@@ -25,6 +43,42 @@ export function HomePage(_props: HomePageProps) {
   const [user, setUser] = useState<User | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [promptInput, setPromptInput] = useState('');
+  const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+  // Typing animation state
+  const [displayText, setDisplayText] = useState('');
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Typing animation effect
+  useEffect(() => {
+    const currentPhrase = typingPhrases[phraseIndex];
+    const typingSpeed = isDeleting ? 30 : 80;
+    const pauseTime = 2000;
+
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        // Typing
+        if (displayText.length < currentPhrase.length) {
+          setDisplayText(currentPhrase.slice(0, displayText.length + 1));
+        } else {
+          // Pause before deleting
+          setTimeout(() => setIsDeleting(true), pauseTime);
+        }
+      } else {
+        // Deleting
+        if (displayText.length > 0) {
+          setDisplayText(displayText.slice(0, -1));
+        } else {
+          setIsDeleting(false);
+          setPhraseIndex((prev) => (prev + 1) % typingPhrases.length);
+        }
+      }
+    }, typingSpeed);
+
+    return () => clearTimeout(timeout);
+  }, [displayText, isDeleting, phraseIndex]);
 
   useEffect(() => {
     setProjects(ProjectService.getProjects());
@@ -89,6 +143,45 @@ export function HomePage(_props: HomePageProps) {
     ProjectService.duplicateProject(id);
     setProjects(ProjectService.getProjects());
     setActiveMenu(null);
+  };
+
+  const handleToggleSelect = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const newSelected = new Set(selectedProjects);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedProjects(newSelected);
+    if (newSelected.size === 0) {
+      setIsSelectionMode(false);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProjects.size === projects.length) {
+      setSelectedProjects(new Set());
+    } else {
+      setSelectedProjects(new Set(projects.map(p => p.id)));
+    }
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedProjects.size === 0) return;
+    if (confirm(`确定要删除选中的 ${selectedProjects.size} 个项目吗？`)) {
+      selectedProjects.forEach(id => {
+        ProjectService.deleteProject(id);
+      });
+      setProjects(ProjectService.getProjects());
+      setSelectedProjects(new Set());
+      setIsSelectionMode(false);
+    }
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedProjects(new Set());
+    setIsSelectionMode(false);
   };
 
   const formatDate = (timestamp: number) => {
@@ -193,25 +286,15 @@ export function HomePage(_props: HomePageProps) {
         <div className="relative max-w-3xl mx-auto">
           {/* Main Title */}
           <div
-            className="text-center mb-5"
+            className="text-center mb-8"
             style={{ animation: 'fadeInUp 0.5s ease-out' }}
           >
-            <h1 className="text-3xl md:text-4xl lg:text-[46px] font-bold text-gray-900 leading-[1.2] tracking-tight">
-              好想法不该只存在脑海里
+            <p className="text-sm text-[#94a3b8] tracking-[0.2em] uppercase mb-4">AI-Powered Creative Studio</p>
+            <h1 className="text-3xl md:text-4xl lg:text-[44px] font-light text-gray-900 leading-[1.35] tracking-tight">
+              从<span className="font-medium">构思</span>到<span className="font-medium">成稿</span>
+              <br />
+              <span className="font-normal">创作只需一步</span>
             </h1>
-            <p className="mt-3 text-xl md:text-2xl text-gray-900/80 font-medium">
-              现在，<span className="text-[#6366f1]">一句话</span>就能变成<span className="text-[#6366f1]">一幅画</span>
-            </p>
-          </div>
-
-          {/* Subtitle */}
-          <div
-            className="text-center mb-8"
-            style={{ animation: 'fadeInUp 0.5s ease-out 0.05s both' }}
-          >
-            <p className="text-base text-gray-400 max-w-lg mx-auto">
-              无需绘画基础，输入你的想法，AI 秒级生成专业画面。支持智能编辑和分镜创作。
-            </p>
           </div>
 
           {/* Chat Input Box - White Card Style */}
@@ -220,28 +303,37 @@ export function HomePage(_props: HomePageProps) {
             style={{ animation: 'fadeInUp 0.5s ease-out 0.1s both' }}
           >
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-4">
-              <textarea
-                value={promptInput}
-                onChange={(e) => setPromptInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handlePromptSubmit();
-                  }
-                }}
-                placeholder="描述你想要的画面..."
-                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-base resize-none outline-none min-h-[28px] max-h-[200px] leading-relaxed"
-                rows={1}
-                style={{
-                  height: 'auto',
-                  overflow: 'hidden'
-                }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = Math.min(target.scrollHeight, 200) + 'px';
-                }}
-              />
+              <div className="relative">
+                {/* Typing placeholder */}
+                {!promptInput && (
+                  <div className="absolute inset-0 pointer-events-none text-gray-400 text-base leading-relaxed">
+                    {displayText}
+                    <span className="inline-block w-[2px] h-[18px] bg-gray-300 ml-0.5 animate-pulse align-middle" />
+                  </div>
+                )}
+                <textarea
+                  value={promptInput}
+                  onChange={(e) => setPromptInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handlePromptSubmit();
+                    }
+                  }}
+                  placeholder=""
+                  className="w-full bg-transparent text-gray-900 text-base resize-none outline-none min-h-[28px] max-h-[200px] leading-relaxed relative z-10"
+                  rows={1}
+                  style={{
+                    height: 'auto',
+                    overflow: 'hidden'
+                  }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = Math.min(target.scrollHeight, 200) + 'px';
+                  }}
+                />
+              </div>
 
               {/* Bottom Bar */}
               <div className="flex items-center justify-end mt-4 pt-2">
@@ -319,13 +411,52 @@ export function HomePage(_props: HomePageProps) {
       <div className="max-w-7xl mx-auto px-6 pt-8 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <h2 className="text-lg font-medium text-gray-900">我的项目</h2>
-          <button
-            onClick={handleCreateProject}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
-          >
-            <Plus size={16} />
-            <span>新建</span>
-          </button>
+          {!isSelectionMode ? (
+            <>
+              <button
+                onClick={handleCreateProject}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <Plus size={16} />
+                <span>新建</span>
+              </button>
+              {projects.length > 0 && (
+                <button
+                  onClick={() => setIsSelectionMode(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  批量管理
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSelectAll}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                {selectedProjects.size === projects.length ? '取消全选' : '全选'}
+              </button>
+              <button
+                onClick={handleBatchDelete}
+                disabled={selectedProjects.size === 0}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  selectedProjects.size > 0
+                    ? 'text-red-600 hover:bg-red-50'
+                    : 'text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <Trash2 size={16} />
+                删除 {selectedProjects.size > 0 && `(${selectedProjects.size})`}
+              </button>
+              <button
+                onClick={handleCancelSelection}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                取消
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="relative">
@@ -377,9 +508,33 @@ export function HomePage(_props: HomePageProps) {
               return (
                 <div
                   key={project.id}
-                  onClick={() => handleOpenProject(project)}
-                  className={`group relative bg-white border-2 border-gray-100 hover:border-gray-300 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg ${activeMenu === project.id ? 'z-30' : ''}`}
+                  onClick={() => isSelectionMode ? handleToggleSelect({} as React.MouseEvent, project.id) : handleOpenProject(project)}
+                  className={`group relative bg-white border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                    selectedProjects.has(project.id)
+                      ? 'border-blue-500 ring-2 ring-blue-100'
+                      : 'border-gray-100 hover:border-gray-300'
+                  } ${activeMenu === project.id ? 'z-30' : ''}`}
                 >
+                  {/* Selection Checkbox */}
+                  {isSelectionMode && (
+                    <div
+                      className="absolute top-3 left-3 z-20"
+                      onClick={(e) => handleToggleSelect(e, project.id)}
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                        selectedProjects.has(project.id)
+                          ? 'bg-blue-500 border-blue-500'
+                          : 'bg-white border-gray-300 hover:border-gray-400'
+                      }`}>
+                        {selectedProjects.has(project.id) && (
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Card Preview */}
                   <div className="aspect-[4/3] relative bg-gray-50 overflow-hidden rounded-t-xl">
                     {/* Dot Grid Pattern */}
