@@ -4,6 +4,7 @@ import { ChatMessage, ChatAttachment } from '@/types';
 import { chatStream, ChatMessageInput } from '@/services/api';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
+import { generateId } from '@/utils/id';
 
 interface ChatbotPanelProps {
   isOpen: boolean;
@@ -24,7 +25,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
 
     // 创建用户消息
     const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       role: 'user',
       content,
       attachments: attachments.length > 0 ? attachments : undefined,
@@ -32,7 +33,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
     };
 
     // 创建助手消息占位符
-    const assistantMessageId = crypto.randomUUID();
+    const assistantMessageId = generateId();
     const assistantMessage: ChatMessage = {
       id: assistantMessageId,
       role: 'assistant',

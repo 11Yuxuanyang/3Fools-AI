@@ -1,4 +1,5 @@
 import { Project, CanvasItem } from '../types';
+import { generateId } from '../utils/id';
 
 const STORAGE_KEY = 'canvasai_projects';
 
@@ -39,7 +40,7 @@ export function saveProject(project: Project): void {
 
 export function createProject(name: string = '未命名画布'): Project {
   const project: Project = {
-    id: crypto.randomUUID(),
+    id: generateId(),
     name,
     items: [],
     createdAt: Date.now(),
@@ -75,7 +76,7 @@ export function duplicateProject(id: string): Project | null {
 
   const duplicate: Project = {
     ...original,
-    id: crypto.randomUUID(),
+    id: generateId(),
     name: `${original.name} 副本`,
     createdAt: Date.now(),
     updatedAt: Date.now(),

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { ArrowUp, Paperclip, Globe, X, ChevronDown } from 'lucide-react';
 import { ChatAttachment } from '@/types';
+import { generateId } from '@/utils/id';
 
 interface ChatInputProps {
   onSend: (content: string, attachments: ChatAttachment[]) => void;
@@ -72,7 +73,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
       const content = await readFileAsBase64(file);
       const attachment: ChatAttachment = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         name: file.name,
         type: file.type,
         size: file.size,

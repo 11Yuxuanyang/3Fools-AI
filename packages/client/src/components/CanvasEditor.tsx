@@ -34,6 +34,8 @@ import { CanvasItem, ToolMode, Project, Storyboard, Scene } from '../types';
 import * as API from '../services/api';
 import * as ProjectService from '../services/projectService';
 import { ChatbotPanel } from './chatbot';
+import { generateId } from '../utils/id';
+import { Tooltip } from './ui';
 
 interface CanvasEditorProps {
   project: Project;
@@ -366,7 +368,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
     const src = canvas.toDataURL('image/png');
 
     const newItem: CanvasItem = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       type: 'image',
       src,
       x: -pan.x + (window.innerWidth / 2) - 200,
@@ -391,7 +393,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       img.src = src;
       img.onload = () => {
         const newItem: CanvasItem = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           type: 'image',
           src,
           x: -pan.x + (window.innerWidth / 2) - (img.width / 4),
@@ -429,7 +431,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
         const height = ratio >= 1 ? displaySize / ratio : displaySize;
 
         const newItem: CanvasItem = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           type: 'image',
           src: base64Image,
           x: -pan.x + (window.innerWidth / 2) - width / 2,
@@ -610,7 +612,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       if (toolMode === ToolMode.TEXT) {
         // 在点击位置创建文字
         const newTextItem: CanvasItem = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           type: 'text',
           src: '输入文字',
           x: canvasX,
@@ -631,7 +633,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       } else if (toolMode === ToolMode.RECTANGLE) {
         // 创建矩形
         const newRectItem: CanvasItem = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           type: 'rectangle',
           src: '',
           x: canvasX,
@@ -650,7 +652,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       } else if (toolMode === ToolMode.CIRCLE) {
         // 创建圆形
         const newCircleItem: CanvasItem = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           type: 'circle',
           src: '',
           x: canvasX,
@@ -668,7 +670,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       } else if (toolMode === ToolMode.LINE) {
         // 创建直线
         const newLineItem: CanvasItem = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           type: 'line',
           src: '',
           x: canvasX,
@@ -685,7 +687,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       } else if (toolMode === ToolMode.ARROW) {
         // 创建箭头
         const newArrowItem: CanvasItem = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           type: 'arrow',
           src: '',
           x: canvasX,
@@ -702,7 +704,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       } else if (toolMode === ToolMode.BRUSH) {
         // 画笔 - 开始绘制路径
         const newBrushItem: CanvasItem = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           type: 'brush',
           src: '',
           x: 0,
@@ -950,7 +952,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
           const width = img.width > 512 ? 512 : img.width;
           const height = img.height > 512 ? (img.height / img.width) * 512 : img.height;
           const newItem: CanvasItem = {
-            id: crypto.randomUUID(),
+            id: generateId(),
             type: 'image',
             src,
             x: dropX - width / 2 + index * 30,
@@ -978,7 +980,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
 
   // 创建新的 Storyboard
   const createNewStoryboard = (): Storyboard => ({
-    id: crypto.randomUUID(),
+    id: generateId(),
     projectId: project.id,
     title: '未命名剧本',
     rawScript: '',
@@ -1033,7 +1035,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
   const handleAddScene = () => {
     const sb = storyboard || createNewStoryboard();
     const newScene: Scene = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       order: sb.scenes.length,
       title: `镜头 ${sb.scenes.length + 1}`,
       description: '',
@@ -1159,86 +1161,95 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       </div>
 
       {/* --- Left Tool Rail --- */}
-      <div className="fixed left-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 p-2 bg-gray-100/90 backdrop-blur-sm shadow-lg rounded-full z-40">
+      <div className="fixed left-4 flex flex-col items-center gap-1 p-2 bg-gray-100/90 backdrop-blur-sm shadow-lg rounded-full z-40" style={{ top: 'calc(50% + 32px)', transform: 'translateY(-50%)' }}>
         {/* 选择 */}
-        <button
-          className={`relative p-3 rounded-full transition-all ${toolMode === ToolMode.SELECT ? 'bg-gray-200/80 text-gray-700' : 'text-gray-500 hover:bg-gray-200/50'}`}
-          onClick={() => { setToolMode(ToolMode.SELECT); setShowCreativeTools(false); }}
-          title="选择"
-        >
-          <MousePointer2 size={20} />
-        </button>
+        <Tooltip content="选择 (V)" side="right">
+          <button
+            className={`relative p-3 rounded-full transition-all duration-200 ease-out ${toolMode === ToolMode.SELECT ? 'bg-gray-800 text-white shadow-md scale-105' : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'}`}
+            onClick={() => { setToolMode(ToolMode.SELECT); setShowCreativeTools(false); }}
+          >
+            <MousePointer2 size={20} />
+          </button>
+        </Tooltip>
 
         {/* 平移 */}
-        <button
-          className={`relative p-3 rounded-full transition-all ${toolMode === ToolMode.PAN ? 'bg-gray-200/80 text-gray-700' : 'text-gray-500 hover:bg-gray-200/50'}`}
-          onClick={() => { setToolMode(ToolMode.PAN); setShowCreativeTools(false); }}
-          title="平移"
-        >
-          <Hand size={20} />
-        </button>
+        <Tooltip content="平移 (H)" side="right">
+          <button
+            className={`relative p-3 rounded-full transition-all duration-200 ease-out ${toolMode === ToolMode.PAN ? 'bg-gray-800 text-white shadow-md scale-105' : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'}`}
+            onClick={() => { setToolMode(ToolMode.PAN); setShowCreativeTools(false); }}
+          >
+            <Hand size={20} />
+          </button>
+        </Tooltip>
 
         {/* 画笔 */}
-        <button
-          className={`relative p-3 rounded-full transition-all ${toolMode === ToolMode.BRUSH ? 'bg-gray-200/80 text-gray-700' : 'text-gray-500 hover:bg-gray-200/50'}`}
-          onClick={() => { setToolMode(ToolMode.BRUSH); setShowCreativeTools(false); }}
-          title="画笔"
-        >
-          <Pencil size={20} />
-        </button>
+        <Tooltip content="画笔 (B)" side="right">
+          <button
+            className={`relative p-3 rounded-full transition-all duration-200 ease-out ${toolMode === ToolMode.BRUSH ? 'bg-gray-800 text-white shadow-md scale-105' : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'}`}
+            onClick={() => { setToolMode(ToolMode.BRUSH); setShowCreativeTools(false); }}
+          >
+            <Pencil size={20} />
+          </button>
+        </Tooltip>
 
         {/* 形状工具 */}
         <div className="relative">
-          <button
-            className={`relative p-3 rounded-full transition-all ${
-              [ToolMode.TEXT, ToolMode.RECTANGLE, ToolMode.CIRCLE, ToolMode.LINE, ToolMode.ARROW].includes(toolMode) || showCreativeTools
-                ? 'bg-gray-200/80 text-gray-700'
-                : 'text-gray-500 hover:bg-gray-200/50'
-            }`}
-            onClick={() => setShowCreativeTools(!showCreativeTools)}
-            title="形状"
-          >
-            <Shapes size={20} />
-          </button>
+          <Tooltip content="形状工具" side="right">
+            <button
+              className={`relative p-3 rounded-full transition-all duration-200 ease-out ${
+                [ToolMode.TEXT, ToolMode.RECTANGLE, ToolMode.CIRCLE, ToolMode.LINE, ToolMode.ARROW].includes(toolMode) || showCreativeTools
+                  ? 'bg-gray-800 text-white shadow-md scale-105'
+                  : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'
+              }`}
+              onClick={() => setShowCreativeTools(!showCreativeTools)}
+            >
+              <Shapes size={20} />
+            </button>
+          </Tooltip>
 
-          {/* 展开菜单 */}
+          {/* 形状展开菜单 */}
           {showCreativeTools && (
-            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 flex gap-1 p-2 bg-gray-100/90 backdrop-blur-sm shadow-lg rounded-full">
-              <button
-                className={`p-2.5 rounded-full transition-all ${toolMode === ToolMode.TEXT ? 'bg-gray-200/80 text-gray-700' : 'text-gray-500 hover:bg-gray-200/50'}`}
-                onClick={() => { setToolMode(ToolMode.TEXT); setShowCreativeTools(false); }}
-                title="文字"
-              >
-                <Type size={18} />
-              </button>
-              <button
-                className={`p-2.5 rounded-full transition-all ${toolMode === ToolMode.LINE ? 'bg-gray-200/80 text-gray-700' : 'text-gray-500 hover:bg-gray-200/50'}`}
-                onClick={() => { setToolMode(ToolMode.LINE); setShowCreativeTools(false); }}
-                title="直线"
-              >
-                <Minus size={18} />
-              </button>
-              <button
-                className={`p-2.5 rounded-full transition-all ${toolMode === ToolMode.ARROW ? 'bg-gray-200/80 text-gray-700' : 'text-gray-500 hover:bg-gray-200/50'}`}
-                onClick={() => { setToolMode(ToolMode.ARROW); setShowCreativeTools(false); }}
-                title="箭头"
-              >
-                <MoveRight size={18} />
-              </button>
-              <button
-                className={`p-2.5 rounded-full transition-all ${toolMode === ToolMode.RECTANGLE ? 'bg-gray-200/80 text-gray-700' : 'text-gray-500 hover:bg-gray-200/50'}`}
-                onClick={() => { setToolMode(ToolMode.RECTANGLE); setShowCreativeTools(false); }}
-                title="矩形"
-              >
-                <Square size={18} />
-              </button>
-              <button
-                className={`p-2.5 rounded-full transition-all ${toolMode === ToolMode.CIRCLE ? 'bg-gray-200/80 text-gray-700' : 'text-gray-500 hover:bg-gray-200/50'}`}
-                onClick={() => { setToolMode(ToolMode.CIRCLE); setShowCreativeTools(false); }}
-                title="圆形"
-              >
-                <Circle size={18} />
-              </button>
+            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 flex gap-1 p-2 bg-gray-100/90 backdrop-blur-sm shadow-lg rounded-full z-50 animate-in slide-in-from-left-2 fade-in duration-200">
+              <Tooltip content="文字 (T)" side="top">
+                <button
+                  className={`p-2.5 rounded-full transition-all duration-200 ease-out ${toolMode === ToolMode.TEXT ? 'bg-gray-800 text-white shadow-md scale-105' : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'}`}
+                  onClick={() => { setToolMode(ToolMode.TEXT); setShowCreativeTools(false); }}
+                >
+                  <Type size={18} />
+                </button>
+              </Tooltip>
+              <Tooltip content="直线 (L)" side="top">
+                <button
+                  className={`p-2.5 rounded-full transition-all duration-200 ease-out ${toolMode === ToolMode.LINE ? 'bg-gray-800 text-white shadow-md scale-105' : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'}`}
+                  onClick={() => { setToolMode(ToolMode.LINE); setShowCreativeTools(false); }}
+                >
+                  <Minus size={18} />
+                </button>
+              </Tooltip>
+              <Tooltip content="箭头 (A)" side="top">
+                <button
+                  className={`p-2.5 rounded-full transition-all duration-200 ease-out ${toolMode === ToolMode.ARROW ? 'bg-gray-800 text-white shadow-md scale-105' : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'}`}
+                  onClick={() => { setToolMode(ToolMode.ARROW); setShowCreativeTools(false); }}
+                >
+                  <MoveRight size={18} />
+                </button>
+              </Tooltip>
+              <Tooltip content="矩形 (R)" side="top">
+                <button
+                  className={`p-2.5 rounded-full transition-all duration-200 ease-out ${toolMode === ToolMode.RECTANGLE ? 'bg-gray-800 text-white shadow-md scale-105' : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'}`}
+                  onClick={() => { setToolMode(ToolMode.RECTANGLE); setShowCreativeTools(false); }}
+                >
+                  <Square size={18} />
+                </button>
+              </Tooltip>
+              <Tooltip content="圆形 (O)" side="top">
+                <button
+                  className={`p-2.5 rounded-full transition-all duration-200 ease-out ${toolMode === ToolMode.CIRCLE ? 'bg-gray-800 text-white shadow-md scale-105' : 'text-gray-500 hover:bg-gray-200/50 hover:scale-105'}`}
+                  onClick={() => { setToolMode(ToolMode.CIRCLE); setShowCreativeTools(false); }}
+                >
+                  <Circle size={18} />
+                </button>
+              </Tooltip>
             </div>
           )}
         </div>

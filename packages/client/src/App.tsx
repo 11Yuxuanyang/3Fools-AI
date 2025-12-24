@@ -6,7 +6,7 @@ import * as ProjectService from './services/projectService';
 
 export default function App() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
-  const [route, setRoute] = useState<string>('');
+  const [route, setRoute] = useState<string>(window.location.hash.slice(1));
 
   // 解析路由
   useEffect(() => {
@@ -17,12 +17,13 @@ export default function App() {
       // 如果是项目页面，加载项目
       if (hash.startsWith('/project/')) {
         const projectId = hash.replace('/project/', '');
-        const project = ProjectService.getProjects().find(p => p.id === projectId);
+        const project = ProjectService.getProject(projectId);
         if (project) {
           setCurrentProject(project);
         } else {
           // 项目不存在，回到首页
           window.location.hash = '';
+          setCurrentProject(null);
         }
       } else {
         setCurrentProject(null);
@@ -36,17 +37,6 @@ export default function App() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
-
-  // 打开项目 - 在新标签页打开
-  const handleOpenProject = (project: Project) => {
-    window.open(`${window.location.origin}${window.location.pathname}#/project/${project.id}`, '_blank');
-  };
-
-  // 创建新项目 - 在新标签页打开
-  const handleCreateProject = () => {
-    const newProject = ProjectService.createProject();
-    window.open(`${window.location.origin}${window.location.pathname}#/project/${newProject.id}`, '_blank');
-  };
 
   // 返回首页
   const handleBack = () => {
@@ -64,11 +54,6 @@ export default function App() {
     );
   }
 
-  // 渲染首页
-  return (
-    <HomePage
-      onOpenProject={handleOpenProject}
-      onCreateProject={handleCreateProject}
-    />
-  );
+  // 渲染首页 - HomePage 内部处理导航
+  return <HomePage onOpenProject={() => {}} onCreateProject={() => {}} />;
 }

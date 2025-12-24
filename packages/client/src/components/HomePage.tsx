@@ -4,11 +4,11 @@ import { Project } from '../types';
 import * as ProjectService from '../services/projectService';
 
 interface HomePageProps {
-  onOpenProject: (project: Project) => void;
-  onCreateProject: () => void;
+  onOpenProject?: (project: Project) => void;
+  onCreateProject?: () => void;
 }
 
-export function HomePage({ onOpenProject, onCreateProject }: HomePageProps) {
+export function HomePage(_props: HomePageProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [hoveredProject, setHoveredProject] = useState<string | null>(null);
 

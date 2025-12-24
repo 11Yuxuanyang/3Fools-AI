@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useDraggablePanel } from '../../hooks/useDraggablePanel';
 import { Scene, Storyboard, CanvasItem } from '../../types';
+import { generateId } from '../../utils/id';
 import { StoryboardHeader } from './StoryboardHeader';
 import { ScriptInputArea } from './ScriptInputArea';
 import { TimelineView } from './TimelineView';
@@ -39,7 +40,7 @@ export function StoryboardPanel({
 
   // 创建新的 Storyboard
   const createNewStoryboard = useCallback((): Storyboard => ({
-    id: crypto.randomUUID(),
+    id: generateId(),
     projectId,
     title: '未命名剧本',
     rawScript: '',
@@ -90,7 +91,7 @@ export function StoryboardPanel({
       const scenes: Scene[] = paragraphs.map((p, i) => {
         const duration = 3 + Math.floor(Math.random() * 5); // 3-7秒
         const scene: Scene = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           order: i,
           title: `镜头 ${i + 1}`,
           description: p.trim().slice(0, 200),
@@ -176,7 +177,7 @@ export function StoryboardPanel({
   // 添加新场景
   const handleAddScene = useCallback(() => {
     const newScene: Scene = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       order: currentStoryboard.scenes.length,
       title: `镜头 ${currentStoryboard.scenes.length + 1}`,
       description: '',

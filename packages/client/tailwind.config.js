@@ -95,6 +95,14 @@ export default {
         "shimmer": {
           "0%": { backgroundPosition: "200% 0" },
           "100%": { backgroundPosition: "-200% 0" }
+        },
+        "pulse-ring": {
+          "0%": { transform: "scale(0.8)", opacity: "0.5" },
+          "100%": { transform: "scale(1.3)", opacity: "0" },
+        },
+        "float-card": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" }
         }
       },
       animation: {
@@ -108,6 +116,8 @@ export default {
         "float-slow": "float-slow 8s ease-in-out infinite",
         "spotlight": "spotlight 2s ease .75s 1 forwards",
         "shimmer": "shimmer 8s linear infinite",
+        "pulse-ring": "pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "float-card": "float-card 4s ease-in-out infinite"
       },
     },
   },
