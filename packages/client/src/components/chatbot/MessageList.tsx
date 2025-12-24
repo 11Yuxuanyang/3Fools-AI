@@ -1,47 +1,91 @@
-import React, { useEffect, useRef } from 'react';
-import { MessageCircle } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { ChatMessage } from '@/types';
 import { MessageItem } from './MessageItem';
 
 interface MessageListProps {
   messages: ChatMessage[];
+  onQuickPrompt?: (prompt: string) => void;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages }) => {
+// 快捷提示分组
+const quickPromptGroups = [
+  [
+    '你能为我做什么？',
+    '帮我写一个剧本大纲',
+    '创作一个科幻故事',
+  ],
+  [
+    '设计一个电影场景',
+    '写一段感人的对白',
+    '创建角色人物设定',
+  ],
+  [
+    '分析一个经典剧本',
+    '帮我改进故事情节',
+    '创作一首诗歌',
+  ],
+];
+
+export const MessageList: React.FC<MessageListProps> = ({ messages, onQuickPrompt }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [promptGroupIndex, setPromptGroupIndex] = useState(0);
 
   // 自动滚动到底部
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleRefreshPrompts = () => {
+    setPromptGroupIndex((prev) => (prev + 1) % quickPromptGroups.length);
+  };
+
+  const currentPrompts = quickPromptGroups[promptGroupIndex];
+
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
-        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-          <MessageCircle size={32} className="text-gray-300" />
+      <div className="flex-1 flex flex-col px-6 py-8 overflow-y-auto">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-semibold mb-2">
+            <span className="bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
+              又来找我了？
+            </span>
+          </h1>
+          <p className="text-xl text-gray-400">
+            说吧，这次想写点什么~
+          </p>
         </div>
-        <h3 className="text-lg font-medium text-gray-600 mb-2">开始对话</h3>
-        <p className="text-sm text-center max-w-[250px]">
-          我是剧本创作助手，可以帮你写剧本、设计场景、编写对白
-        </p>
-        <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-[300px]">
-          {['写一个剧本大纲', '设计一个场景', '写一段对白', '创建人物设定'].map((suggestion) => (
+
+        {/* Quick Prompts */}
+        <div className="space-y-3">
+          {currentPrompts.map((prompt, index) => (
             <button
-              key={suggestion}
-              className="px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs transition-colors"
+              key={`${promptGroupIndex}-${index}`}
+              onClick={() => onQuickPrompt?.(prompt)}
+              className="w-fit px-5 py-3 rounded-2xl bg-gray-100/80 hover:bg-gray-200/80 text-gray-700 text-sm font-medium transition-all duration-200 hover:shadow-sm animate-in fade-in slide-in-from-left duration-300"
+              style={{ animationDelay: `${index * 80}ms` }}
             >
-              {suggestion}
+              {prompt}
             </button>
           ))}
         </div>
+
+        {/* Refresh Button */}
+        <button
+          onClick={handleRefreshPrompts}
+          className="flex items-center gap-2 mt-6 text-gray-400 hover:text-gray-600 text-sm transition-colors group"
+        >
+          <RefreshCw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
+          <span>换一换</span>
+        </button>
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div ref={containerRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
       {messages.map((message) => (
         <MessageItem key={message.id} message={message} />
       ))}

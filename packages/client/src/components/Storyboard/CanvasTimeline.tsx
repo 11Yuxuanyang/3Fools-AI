@@ -1,42 +1,70 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Scene, CanvasItem } from '../../types';
-import { Plus, Image, Trash2, Clock, Film, Clapperboard } from 'lucide-react';
+import {
+  Plus, Image, Trash2, Clock, ChevronUp, ChevronDown,
+  ZoomIn, ZoomOut, Play, SkipBack, SkipForward
+} from 'lucide-react';
 
 interface CanvasTimelineProps {
   scenes: Scene[];
   totalDuration: number;
-  zoom: number;
-  pan: { x: number; y: number };
-  scale: number;
   onSceneClick: (scene: Scene) => void;
   onSceneUpdate: (scene: Scene) => void;
   onSceneDelete: (sceneId: string) => void;
   onAddScene: () => void;
   onOpenImagePicker: (sceneId: string) => void;
+  onLocateScene: (scene: Scene) => void; // 定位到场景对应的画布图片
   canvasItems: CanvasItem[];
 }
 
 export function CanvasTimeline({
   scenes,
   totalDuration,
-  zoom,
   onSceneClick,
   onSceneDelete,
   onAddScene,
   onOpenImagePicker,
+  onLocateScene,
   canvasItems,
 }: CanvasTimelineProps) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [zoom, setZoom] = useState(80); // px per second
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [playheadTime, setPlayheadTime] = useState(0);
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+
+  const trackRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   // 时间轴配置
-  const HEADER_HEIGHT = 36;
+  const CARD_HEIGHT = 80;
+  const CARD_GAP = 4;
+  const MIN_CARD_WIDTH = 60;
   const RULER_HEIGHT = 28;
-  const TRACK_Y = HEADER_HEIGHT + RULER_HEIGHT + 8; // 轨道起始Y位置
-  const CARD_HEIGHT = 120;
-  const CARD_GAP = 8;
+  const COLLAPSED_HEIGHT = 48;
+  const EXPANDED_HEIGHT = 180;
+
+  // 时间轴总宽度
+  const timelineWidth = Math.max((totalDuration + 10) * zoom, 600);
+
+  // 格式化时间
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const frames = Math.floor((seconds % 1) * 30); // 假设30fps
+    return `${mins}:${secs.toString().padStart(2, '0')}:${frames.toString().padStart(2, '0')}`;
+  };
+
+  const formatTimeShort = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // 生成刻度
   const generateTicks = () => {
     const ticks: { time: number; major: boolean }[] = [];
-    const maxTime = Math.max(totalDuration + 30, 60);
+    const maxTime = Math.max(totalDuration + 10, 30);
 
     let majorInterval = 5;
     let minorInterval = 1;
@@ -44,21 +72,16 @@ export function CanvasTimeline({
     if (zoom < 40) {
       majorInterval = 10;
       minorInterval = 5;
-    } else if (zoom > 120) {
+    } else if (zoom > 100) {
       majorInterval = 2;
-      minorInterval = 1;
+      minorInterval = 0.5;
     }
 
     for (let t = 0; t <= maxTime; t += minorInterval) {
-      ticks.push({ time: t, major: t % majorInterval === 0 });
+      const isMajor = Math.abs(t % majorInterval) < 0.01;
+      ticks.push({ time: t, major: isMajor });
     }
     return ticks;
-  };
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // 获取场景图片
@@ -73,184 +96,284 @@ export function CanvasTimeline({
     return undefined;
   };
 
-  const ticks = generateTicks();
-  const timelineWidth = Math.max((totalDuration + 30) * zoom, 800);
+  // 处理滚动
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setScrollLeft(e.currentTarget.scrollLeft);
+  };
 
-  // 时间轴面板总高度
-  const PANEL_HEIGHT = TRACK_Y + CARD_HEIGHT + 30;
-  // 时间轴放置在画布原点上方
-  const TIMELINE_Y_OFFSET = -PANEL_HEIGHT - 50;
+  // 处理缩放
+  const handleZoom = (delta: number) => {
+    setZoom(prev => Math.min(Math.max(20, prev + delta), 200));
+  };
+
+  // 点击时间轴设置播放头
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!scrollContainerRef.current) return;
+    const rect = scrollContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left + scrollLeft;
+    const time = x / zoom;
+    setPlayheadTime(Math.max(0, Math.min(time, totalDuration)));
+  };
+
+  // 选中场景
+  const handleSceneSelect = (scene: Scene, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedSceneId(scene.id);
+    setPlayheadTime(scene.startTime);
+  };
+
+  const ticks = generateTicks();
 
   return (
     <div
-      className="absolute"
-      style={{
-        left: -20,
-        top: TIMELINE_Y_OFFSET,
-        zIndex: 1000,
-      }}
+      className="fixed bottom-0 left-0 right-0 z-50 flex flex-col bg-gray-900 border-t border-gray-700 shadow-2xl transition-all duration-300"
+      style={{ height: isExpanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT }}
     >
-      {/* 时间轴面板背景 */}
-      <div
-        className="absolute bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 pointer-events-auto"
-        style={{
-          left: -10,
-          top: -10,
-          width: timelineWidth + 40,
-          height: PANEL_HEIGHT + 20,
-        }}
-      />
-
-      {/* 头部信息 */}
-      <div
-        className="absolute pointer-events-auto flex items-center justify-between px-4"
-        style={{
-          left: 0,
-          top: 0,
-          width: Math.min(timelineWidth, 600),
-          height: HEADER_HEIGHT,
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <Clapperboard size={18} className="text-violet-500" />
-          <span className="text-sm font-semibold text-gray-800">分镜时间轴</span>
-        </div>
-        <div className="flex items-center gap-4 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <Film size={14} />
-            {scenes.length} 镜头
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock size={14} />
-            {formatTime(totalDuration)}
-          </span>
-        </div>
-      </div>
-
-      {/* 时间轴标尺 */}
-      <div
-        className="absolute pointer-events-auto"
-        style={{
-          left: 0,
-          top: HEADER_HEIGHT,
-          width: timelineWidth,
-          height: RULER_HEIGHT,
-        }}
-      >
-        {/* 标尺背景 */}
-        <div className="absolute inset-0 bg-violet-50/80 border-y border-violet-200" />
-
-        {/* 刻度 */}
-        {ticks.map(({ time, major }) => (
-          <div
-            key={time}
-            className="absolute flex flex-col items-center"
-            style={{ left: time * zoom, top: 0 }}
+      {/* 顶部控制栏 */}
+      <div className="h-12 flex items-center justify-between px-4 bg-gray-800 border-b border-gray-700">
+        {/* 左侧：展开/收起 + 信息 */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
           >
-            <div className={`w-px ${major ? 'h-4 bg-violet-400' : 'h-2 bg-violet-300'}`} />
-            {major && (
-              <span className="text-[10px] text-violet-600 mt-0.5 select-none font-medium">
-                {formatTime(time)}
-              </span>
-            )}
+            {isExpanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+          </button>
+
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-gray-400">
+              <span className="text-white font-medium">{scenes.length}</span> 镜头
+            </span>
+            <span className="text-gray-600">|</span>
+            <span className="text-gray-400">
+              总时长 <span className="text-white font-medium">{formatTimeShort(totalDuration)}</span>
+            </span>
           </div>
-        ))}
+        </div>
+
+        {/* 中间：播放控制 + 时间码 */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            <button className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
+              <SkipBack size={16} />
+            </button>
+            <button className="p-2 rounded-full bg-violet-600 hover:bg-violet-500 text-white transition-colors">
+              <Play size={16} fill="currentColor" />
+            </button>
+            <button className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
+              <SkipForward size={16} />
+            </button>
+          </div>
+
+          <div className="px-3 py-1 bg-gray-900 rounded font-mono text-sm text-green-400">
+            {formatTime(playheadTime)}
+          </div>
+        </div>
+
+        {/* 右侧：缩放控制 */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleZoom(-20)}
+            className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+          >
+            <ZoomOut size={16} />
+          </button>
+          <div className="w-20 h-1 bg-gray-700 rounded-full relative">
+            <div
+              className="absolute top-0 left-0 h-full bg-violet-500 rounded-full"
+              style={{ width: `${((zoom - 20) / 180) * 100}%` }}
+            />
+          </div>
+          <button
+            onClick={() => handleZoom(20)}
+            className="p-1.5 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+          >
+            <ZoomIn size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* 分镜轨道 */}
-      <div
-        className="absolute pointer-events-auto"
-        style={{
-          left: 0,
-          top: TRACK_Y,
-          width: timelineWidth,
-        }}
-      >
-        {/* 轨道背景线 */}
-        <div
-          className="absolute h-px bg-gray-200"
-          style={{
-            left: 0,
-            top: CARD_HEIGHT / 2,
-            width: timelineWidth,
-          }}
-        />
-
-        {/* 分镜卡片 */}
-        {scenes.map((scene) => {
-          const imageSrc = getSceneImage(scene);
-          const cardWidth = Math.max(scene.duration * zoom - CARD_GAP, 80);
-
-          return (
+      {/* 时间轴内容区（可展开） */}
+      {isExpanded && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* 时间刻度尺 */}
+          <div
+            ref={scrollContainerRef}
+            className="relative overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
+            onScroll={handleScroll}
+            onClick={handleTimelineClick}
+            style={{ height: RULER_HEIGHT }}
+          >
             <div
-              key={scene.id}
-              className="absolute bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden cursor-pointer hover:shadow-lg hover:border-violet-300 transition-all group"
-              style={{
-                left: scene.startTime * zoom,
-                top: 0,
-                width: cardWidth,
-                height: CARD_HEIGHT,
-              }}
-              onClick={() => onSceneClick(scene)}
+              className="relative bg-gray-850"
+              style={{ width: timelineWidth, height: RULER_HEIGHT }}
             >
-              {/* 图片预览 */}
-              <div className="h-[60px] bg-gray-100 relative overflow-hidden">
-                {imageSrc ? (
-                  <img src={imageSrc} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Image size={20} className="text-gray-300" />
-                  </div>
-                )}
-
-                {/* 悬停操作 */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onOpenImagePicker(scene.id); }}
-                    className="p-1.5 bg-white rounded-lg shadow text-gray-600 hover:text-violet-600"
-                    title="选择图片"
-                  >
-                    <Image size={12} />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onSceneDelete(scene.id); }}
-                    className="p-1.5 bg-white rounded-lg shadow text-gray-600 hover:text-red-500"
-                    title="删除"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+              {/* 刻度线 */}
+              {ticks.map(({ time, major }, i) => (
+                <div
+                  key={i}
+                  className="absolute top-0 flex flex-col items-center"
+                  style={{ left: time * zoom }}
+                >
+                  <div className={`w-px ${major ? 'h-4 bg-gray-500' : 'h-2 bg-gray-700'}`} />
+                  {major && (
+                    <span className="text-[10px] text-gray-500 mt-0.5 select-none">
+                      {formatTimeShort(time)}
+                    </span>
+                  )}
                 </div>
-              </div>
+              ))}
 
-              {/* 信息 */}
-              <div className="p-2">
-                <h4 className="text-[11px] font-medium text-gray-800 truncate">
-                  {scene.title}
-                </h4>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <Clock size={10} className="text-gray-400" />
-                  <span className="text-[10px] text-gray-400">{scene.duration}s</span>
-                </div>
+              {/* 播放头指示器（在刻度尺上） */}
+              <div
+                className="absolute top-0 w-0.5 h-full bg-red-500 z-10"
+                style={{ left: playheadTime * zoom }}
+              >
+                <div className="absolute -top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rotate-45 transform origin-center" />
               </div>
             </div>
-          );
-        })}
+          </div>
 
-        {/* 添加按钮 */}
-        <button
-          onClick={onAddScene}
-          className="absolute bg-white border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center hover:border-violet-400 hover:bg-violet-50 transition-colors"
-          style={{
-            left: totalDuration * zoom + CARD_GAP,
-            top: 0,
-            width: 80,
-            height: CARD_HEIGHT,
-          }}
-        >
-          <Plus size={20} className="text-gray-400" />
-          <span className="text-[10px] text-gray-400 mt-1">添加</span>
-        </button>
-      </div>
+          {/* 场景轨道 */}
+          <div
+            className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
+            onScroll={(e) => {
+              // 同步滚动
+              if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollLeft = e.currentTarget.scrollLeft;
+              }
+              setScrollLeft(e.currentTarget.scrollLeft);
+            }}
+          >
+            <div
+              ref={trackRef}
+              className="relative h-full"
+              style={{ width: timelineWidth, minHeight: CARD_HEIGHT + 20 }}
+            >
+              {/* 轨道背景网格 */}
+              <div className="absolute inset-0 opacity-20">
+                {ticks.filter(t => t.major).map(({ time }, i) => (
+                  <div
+                    key={i}
+                    className="absolute top-0 bottom-0 w-px bg-gray-700"
+                    style={{ left: time * zoom }}
+                  />
+                ))}
+              </div>
+
+              {/* 播放头（在轨道上） */}
+              <div
+                className="absolute top-0 bottom-0 w-0.5 bg-red-500/50 z-20 pointer-events-none"
+                style={{ left: playheadTime * zoom }}
+              />
+
+              {/* 场景卡片 */}
+              <div className="absolute top-2 bottom-2 left-0 right-0">
+                {scenes.map((scene) => {
+                  const imageSrc = getSceneImage(scene);
+                  const cardWidth = Math.max(scene.duration * zoom - CARD_GAP, MIN_CARD_WIDTH);
+                  const isSelected = selectedSceneId === scene.id;
+
+                  return (
+                    <div
+                      key={scene.id}
+                      className={`absolute top-0 bottom-0 rounded-lg overflow-hidden cursor-pointer transition-all
+                        ${isSelected
+                          ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-gray-900'
+                          : 'hover:ring-1 hover:ring-gray-500'
+                        }`}
+                      style={{
+                        left: scene.startTime * zoom,
+                        width: cardWidth,
+                      }}
+                      onClick={(e) => handleSceneSelect(scene, e)}
+                      onDoubleClick={() => onSceneClick(scene)}
+                    >
+                      {/* 场景背景/图片 */}
+                      <div className="absolute inset-0 bg-gray-800">
+                        {imageSrc ? (
+                          <img
+                            src={imageSrc}
+                            alt=""
+                            className="w-full h-full object-cover opacity-80"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
+                            <Image size={24} className="text-gray-600" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 渐变遮罩 */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+
+                      {/* 顶部色条 - 状态指示 */}
+                      <div className={`absolute top-0 left-0 right-0 h-1 ${
+                        scene.status === 'ready' ? 'bg-green-500' :
+                        scene.status === 'generating' ? 'bg-yellow-500' :
+                        scene.status === 'error' ? 'bg-red-500' :
+                        'bg-gray-600'
+                      }`} />
+
+                      {/* 底部信息 */}
+                      <div className="absolute bottom-0 left-0 right-0 p-1.5">
+                        <div className="text-[10px] font-medium text-white truncate">
+                          {scene.title}
+                        </div>
+                        <div className="text-[9px] text-gray-400 flex items-center gap-1">
+                          <Clock size={8} />
+                          {scene.duration}s
+                        </div>
+                      </div>
+
+                      {/* 悬停操作 */}
+                      <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onOpenImagePicker(scene.id); }}
+                          className="p-1 bg-black/60 rounded text-gray-300 hover:text-white hover:bg-black/80"
+                          title="选择图片"
+                        >
+                          <Image size={10} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onLocateScene(scene); }}
+                          className="p-1 bg-black/60 rounded text-gray-300 hover:text-violet-400 hover:bg-black/80"
+                          title="定位到画布"
+                        >
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onSceneDelete(scene.id); }}
+                          className="p-1 bg-black/60 rounded text-gray-300 hover:text-red-400 hover:bg-black/80"
+                          title="删除"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* 添加新场景按钮 */}
+                <button
+                  onClick={onAddScene}
+                  className="absolute top-0 bottom-0 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-700 hover:border-violet-500 hover:bg-violet-500/10 transition-colors group"
+                  style={{
+                    left: totalDuration * zoom + CARD_GAP,
+                    width: 60,
+                  }}
+                >
+                  <Plus size={20} className="text-gray-600 group-hover:text-violet-400" />
+                  <span className="text-[9px] text-gray-600 group-hover:text-violet-400 mt-1">添加</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

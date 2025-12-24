@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Send, Paperclip, Globe, X, Loader2 } from 'lucide-react';
+import { ArrowUp, Paperclip, Globe, X, ChevronDown } from 'lucide-react';
 import { ChatAttachment } from '@/types';
 
 interface ChatInputProps {
@@ -27,7 +27,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
     }
   }, []);
 
@@ -106,29 +106,31 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     });
   };
 
+  const canSend = (content.trim() || attachments.length > 0) && !isLoading && !disabled;
+
   return (
-    <div className="border-t border-gray-200 p-4 bg-white">
+    <div className="p-4 bg-[#fafafa]">
       {/* Attachments Preview */}
       {attachments.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-3">
+        <div className="flex flex-wrap gap-2 mb-3 px-2">
           {attachments.map((attachment) => (
-            <div key={attachment.id} className="relative group">
+            <div key={attachment.id} className="relative group animate-in zoom-in-95 duration-200">
               {attachment.type.startsWith('image/') ? (
                 <img
                   src={attachment.previewUrl}
                   alt={attachment.name}
-                  className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                  className="w-16 h-16 object-cover rounded-xl border border-gray-200"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-lg border border-gray-200 flex items-center justify-center bg-gray-50">
-                  <span className="text-xs text-gray-500 text-center px-1 truncate">
+                <div className="w-16 h-16 rounded-xl border border-gray-200 flex items-center justify-center bg-white">
+                  <span className="text-[10px] text-gray-500 text-center px-1 truncate">
                     {attachment.name}
                   </span>
                 </div>
               )}
               <button
                 onClick={() => removeAttachment(attachment.id)}
-                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
               >
                 <X size={12} />
               </button>
@@ -137,42 +139,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
 
-      {/* Input Area */}
-      <div className="flex items-end gap-2">
-        {/* Attachment Button */}
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isLoading || disabled}
-          className="flex-shrink-0 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
-        >
-          <Paperclip size={20} />
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,.txt,.pdf"
-          multiple
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-
-        {/* Web Search Toggle */}
-        <button
-          onClick={() => onWebSearchToggle(!webSearchEnabled)}
-          disabled={isLoading || disabled}
-          className={`
-            flex-shrink-0 p-2 rounded-lg transition-colors disabled:opacity-50
-            ${webSearchEnabled
-              ? 'text-primary bg-primary/10'
-              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}
-          `}
-          title={webSearchEnabled ? '联网搜索已开启' : '开启联网搜索'}
-        >
-          <Globe size={20} />
-        </button>
-
-        {/* Text Input */}
-        <div className="flex-1 relative">
+      {/* Input Container */}
+      <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
+        {/* Textarea */}
+        <div className="px-4 pt-4 pb-3">
           <textarea
             ref={textareaRef}
             value={content}
@@ -181,26 +151,74 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               adjustHeight();
             }}
             onKeyDown={handleKeyDown}
-            placeholder="输入消息..."
+            placeholder="选择文件或输入任何问题"
             disabled={isLoading || disabled}
             rows={1}
-            className="w-full resize-none rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-gray-50 disabled:text-gray-400"
-            style={{ minHeight: '44px', maxHeight: '150px' }}
+            className="w-full resize-none bg-transparent text-gray-600 placeholder-gray-400/80 text-sm focus:outline-none disabled:text-gray-400"
+            style={{ minHeight: '24px', maxHeight: '120px' }}
           />
         </div>
 
-        {/* Send Button */}
-        <button
-          onClick={handleSubmit}
-          disabled={isLoading || disabled || (!content.trim() && attachments.length === 0)}
-          className="flex-shrink-0 p-3 rounded-full bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <Loader2 size={20} className="animate-spin" />
-          ) : (
-            <Send size={20} />
-          )}
-        </button>
+        {/* Bottom Toolbar */}
+        <div className="flex items-center justify-between px-3 pb-3">
+          <div className="flex items-center gap-2">
+            {/* Attachment Button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || disabled}
+              className="p-2 rounded-lg border border-gray-200/80 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <Paperclip size={18} />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.txt,.pdf"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            {/* Web Search Toggle - Pill Style */}
+            <button
+              onClick={() => onWebSearchToggle(!webSearchEnabled)}
+              disabled={isLoading || disabled}
+              className={`
+                flex items-center gap-1.5 px-3 py-2 rounded-full border transition-all disabled:opacity-50 text-sm
+                ${webSearchEnabled
+                  ? 'border-cyan-300 text-cyan-600 bg-cyan-50'
+                  : 'border-gray-200/80 text-gray-500 hover:text-gray-700 hover:bg-gray-50'}
+              `}
+            >
+              <Globe size={16} />
+              <span>{webSearchEnabled ? '联网已开启' : '全部来源'}</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Model Selector */}
+            <button
+              className="flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200/80 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+            >
+              <span>星流</span>
+              <ChevronDown size={14} />
+            </button>
+
+            {/* Send Button */}
+            <button
+              onClick={handleSubmit}
+              disabled={!canSend}
+              className={`
+                p-2.5 rounded-full transition-all duration-200
+                ${canSend
+                  ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-sm'
+                  : 'bg-gray-100 text-gray-300 cursor-not-allowed'}
+              `}
+            >
+              <ArrowUp size={18} strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

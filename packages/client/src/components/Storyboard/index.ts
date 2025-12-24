@@ -9,3 +9,4 @@ export { SceneCard } from './SceneCard';
 export { SceneDetailModal } from './SceneDetailModal';
 export { ImagePicker } from './ImagePicker';
 export { CanvasTimeline } from './CanvasTimeline';
+export { StoryboardEditor } from './StoryboardEditor';

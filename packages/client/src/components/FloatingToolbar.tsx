@@ -43,7 +43,11 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   };
 
   return (
-    <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <div
+      className="absolute top-[-60px] left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="bg-white/95 backdrop-blur-xl border border-gray-200 rounded-2xl shadow-lg p-1.5 flex items-center gap-1">
         
         {/* Magic Edit Input Overlay */}

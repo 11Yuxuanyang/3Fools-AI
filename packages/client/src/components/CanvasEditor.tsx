@@ -26,11 +26,10 @@ import {
   Minus,
   Eraser,
   Image,
-  MessageCircle,
 } from 'lucide-react';
 import { FloatingToolbar } from './FloatingToolbar';
 import { IconBtn } from './IconBtn';
-import { CanvasTimeline, SceneDetailModal, ImagePicker } from './Storyboard';
+import { StoryboardEditor, SceneDetailModal, ImagePicker } from './Storyboard';
 import { CanvasItem, ToolMode, Project, Storyboard, Scene } from '../types';
 import * as API from '../services/api';
 import * as ProjectService from '../services/projectService';
@@ -101,6 +100,29 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
 
   // Chatbot 状态
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [tauntMessage, setTauntMessage] = useState('');
+  const [isWiggling, setIsWiggling] = useState(false);
+  const chatBtnRef = useRef<HTMLDivElement>(null);
+  const chatBtnDragRef = useRef({ isDragging: false, startX: 0, startY: 0, moved: false });
+
+  // 嘲讽语录
+  const tauntMessages = [
+    '写不出来吧？😏',
+    '就这？就这？',
+    '我都替你尴尬...',
+    '要不要我帮你？🙄',
+    '又在摸鱼？',
+    '灵感枯竭了吗~',
+    '我看你很久了👀',
+    '点我啊，不敢吗',
+    '哎，又发呆...',
+    '今天也没产出呢',
+    '要不...放弃算了？',
+    '我等得花都谢了🌸',
+    '你行不行啊',
+    '需要我教你吗？',
+    '啧啧啧...',
+  ];
 
   // 剧本模式状态
   const [showStoryboard, setShowStoryboard] = useState(false);
@@ -109,7 +131,6 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
   const [showSceneDetail, setShowSceneDetail] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [imagePickerSceneId, setImagePickerSceneId] = useState<string | null>(null);
-  const [storyboardZoom, setStoryboardZoom] = useState(60); // px/秒
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -142,6 +163,100 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
       nameInputRef.current.select();
     }
   }, [isEditingName]);
+
+  // 随机嘲讽定时器
+  useEffect(() => {
+    if (isChatOpen) return;
+
+    const triggerTaunt = () => {
+      const randomMsg = tauntMessages[Math.floor(Math.random() * tauntMessages.length)];
+      setTauntMessage(randomMsg);
+      setIsWiggling(true);
+
+      // 3秒后隐藏消息
+      setTimeout(() => {
+        setTauntMessage('');
+        setIsWiggling(false);
+      }, 3000);
+    };
+
+    // 首次延迟5秒后开始
+    const initialDelay = setTimeout(() => {
+      triggerTaunt();
+    }, 5000);
+
+    // 之后每15-30秒随机触发
+    const interval = setInterval(() => {
+      if (Math.random() > 0.5) {
+        triggerTaunt();
+      }
+    }, 15000);
+
+    return () => {
+      clearTimeout(initialDelay);
+      clearInterval(interval);
+    };
+  }, [isChatOpen]);
+
+  // Chatbot 按钮拖拽 - 使用原生事件直接操作 DOM
+  useEffect(() => {
+    const btn = chatBtnRef.current;
+    if (!btn) return;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = btn.getBoundingClientRect();
+      chatBtnDragRef.current = {
+        isDragging: true,
+        startX: e.clientX - rect.left,
+        startY: e.clientY - rect.top,
+        moved: false,
+      };
+      btn.style.cursor = 'grabbing';
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!chatBtnDragRef.current.isDragging) return;
+      e.preventDefault();
+      const newX = e.clientX - chatBtnDragRef.current.startX;
+      const newY = e.clientY - chatBtnDragRef.current.startY;
+      btn.style.left = `${newX}px`;
+      btn.style.top = `${newY}px`;
+      chatBtnDragRef.current.moved = true;
+    };
+
+    const handleMouseUp = () => {
+      if (!chatBtnDragRef.current.isDragging) return;
+      chatBtnDragRef.current.isDragging = false;
+      btn.style.cursor = 'grab';
+      // 延迟重置 moved，防止触发 click
+      setTimeout(() => {
+        chatBtnDragRef.current.moved = false;
+      }, 50);
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      if (chatBtnDragRef.current.moved) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      setIsChatOpen(true);
+    };
+
+    btn.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    btn.addEventListener('click', handleClick);
+
+    return () => {
+      btn.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      btn.removeEventListener('click', handleClick);
+    };
+  }, []);
 
   // 阻止浏览器默认的双指缩放行为
   useEffect(() => {
@@ -965,6 +1080,27 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
     setImagePickerSceneId(null);
   };
 
+  // 定位到场景对应的画布图片
+  const handleLocateScene = (scene: Scene) => {
+    if (scene.imageSource === 'canvas' && scene.canvasItemId) {
+      const item = items.find(i => i.id === scene.canvasItemId);
+      if (item) {
+        // 计算需要的 pan 值，使图片居中显示
+        const targetX = -(item.x + item.width / 2);
+        const targetY = -(item.y + item.height / 2);
+        setPan({ x: targetX, y: targetY });
+        setScale(1);
+        setSelectedIds([item.id]);
+      }
+    }
+  };
+
+  // 剧本导入（占位）
+  const handleImportScript = () => {
+    // TODO: 实现剧本导入功能
+    alert('剧本导入功能即将上线！');
+  };
+
   // --- Render ---
 
   return (
@@ -1137,23 +1273,6 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`
           }}
         >
-          {/* 剧本模式时间轴 */}
-          {showStoryboard && (
-            <CanvasTimeline
-              scenes={currentStoryboard.scenes}
-              totalDuration={currentStoryboard.totalDuration}
-              zoom={storyboardZoom}
-              pan={pan}
-              scale={scale}
-              onSceneClick={handleSceneClick}
-              onSceneUpdate={handleSceneUpdate}
-              onSceneDelete={handleSceneDelete}
-              onAddScene={handleAddScene}
-              onOpenImagePicker={handleOpenImagePicker}
-              canvasItems={items}
-            />
-          )}
-
           {items.map(item => {
             const isSelected = selectedIds.includes(item.id);
             return (
@@ -1373,9 +1492,13 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
                     />
                   </div>
                 )}
-                {/* Simple delete button for non-image items */}
-                {isSelected && !isPanning && !isDragging && item.type !== 'image' && !editingTextId && (
-                  <div style={{ transform: `scale(${1/scale})`, transformOrigin: 'bottom center' }}>
+                {/* Simple delete button for non-image items (single select only) */}
+                {isSelected && selectedIds.length === 1 && !isPanning && !isDragging && item.type !== 'image' && !editingTextId && (
+                  <div
+                    style={{ transform: `scale(${1/scale})`, transformOrigin: 'bottom center' }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 z-50">
                       <button
                         onClick={handleDelete}
@@ -1434,6 +1557,25 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
                   className="absolute -bottom-2 -right-2 w-4 h-4 bg-white border-2 border-primary rounded-full shadow-md cursor-nwse-resize hover:scale-125 transition-transform"
                   onMouseDown={(e) => handleResizeStart(e, 'br')}
                 />
+                {/* 多选删除按钮 */}
+                {!isPanning && !isDragging && (
+                  <div
+                    style={{ transform: `scale(${1/scale})`, transformOrigin: 'top center' }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="absolute top-[-45px] left-1/2 -translate-x-1/2 z-50">
+                      <button
+                        onClick={handleDelete}
+                        className="p-2 bg-white rounded-lg shadow-lg border border-gray-200 text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors flex items-center gap-1.5"
+                        title={`删除 ${selectedIds.length} 个元素`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        <span className="text-xs font-medium">{selectedIds.length}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -1827,20 +1969,81 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
         />
       )}
 
-      {/* Chatbot 触发按钮 */}
-      <button
-        onClick={() => setIsChatOpen(true)}
-        className={`fixed right-6 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-primary hover:border-primary/30 transition-all hover:shadow-xl ${isChatOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-        title="打开剧本助手"
+      {/* Chatbot 触发按钮 - 欠揍的小表情 */}
+      <div
+        ref={chatBtnRef}
+        className={`fixed z-40 ${isChatOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        style={{
+          left: window.innerWidth - 80,
+          top: window.innerHeight / 2,
+          cursor: 'grab',
+        }}
+        title="拖拽移动 / 点击打开"
       >
-        <MessageCircle size={22} />
-      </button>
+        {/* 嘲讽气泡 */}
+        {tauntMessage && (
+          <div className="absolute bottom-full right-0 mb-3 px-3 py-2 bg-white rounded-2xl shadow-lg text-sm text-gray-600 whitespace-nowrap border border-gray-100">
+            {tauntMessage}
+            <div className="absolute -bottom-2 right-5 w-3 h-3 bg-white border-r border-b border-gray-100 transform rotate-45" />
+          </div>
+        )}
+
+        {/* 极简欠揍小球 */}
+        <div
+          className="relative select-none hover:scale-110 active:scale-95 transition-all duration-200"
+          style={{
+            animation: isWiggling ? 'wiggle 0.2s ease-in-out infinite' : undefined,
+          }}
+        >
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+            {/* 身体 - 纯圆 */}
+            <circle cx="26" cy="26" r="24" fill="#7C3AED" />
+
+            {/* 眼睛 - 两个小点，斜视 */}
+            <circle cx={isWiggling ? "20" : "18"} cy="22" r="3" fill="white" />
+            <circle cx={isWiggling ? "34" : "32"} cy="22" r="3" fill="white" />
+
+            {/* 嘴巴 - 简单弧线 */}
+            <path
+              d={isWiggling ? "M18 34 Q26 42 34 34" : "M20 32 Q26 36 32 32"}
+              stroke="white"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              fill="none"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* Wiggle 动画样式 */}
+      <style>{`
+        @keyframes wiggle {
+          0%, 100% { transform: rotate(-6deg); }
+          50% { transform: rotate(6deg); }
+        }
+      `}</style>
 
       {/* Chatbot 面板 */}
       <ChatbotPanel
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
       />
+
+      {/* 全屏分镜编辑器弹窗 */}
+      {showStoryboard && (
+        <StoryboardEditor
+          scenes={currentStoryboard.scenes}
+          totalDuration={currentStoryboard.totalDuration}
+          onClose={() => setShowStoryboard(false)}
+          onSceneClick={handleSceneClick}
+          onSceneUpdate={handleSceneUpdate}
+          onSceneDelete={handleSceneDelete}
+          onAddScene={handleAddScene}
+          onOpenImagePicker={handleOpenImagePicker}
+          onImportScript={handleImportScript}
+          canvasItems={items}
+        />
+      )}
 
     </div>
   );

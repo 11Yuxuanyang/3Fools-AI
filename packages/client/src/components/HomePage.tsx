@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ChevronDown, LogOut, Star, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Clock, Layers, Sparkles, ArrowRight } from 'lucide-react';
 import { Project } from '../types';
 import * as ProjectService from '../services/projectService';
-import { LoginModal } from './LoginModal';
-
-interface User {
-  id: string;
-  nickname: string;
-  avatar: string;
-}
 
 interface HomePageProps {
   onOpenProject: (project: Project) => void;
@@ -17,35 +10,20 @@ interface HomePageProps {
 
 export function HomePage({ onOpenProject, onCreateProject }: HomePageProps) {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [hoveredProject, setHoveredProject] = useState<string | null>(null);
 
-  // 加载项目列表
   useEffect(() => {
     setProjects(ProjectService.getProjects());
   }, []);
 
-  // 加载用户信息
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem('user');
-      }
-    }
-  }, []);
-
-  const handleLoginSuccess = (loggedInUser: User) => {
-    setUser(loggedInUser);
+  const handleOpenProject = (project: Project) => {
+    // Direct navigation - no popup blockers
+    window.location.hash = `/project/${project.id}`;
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    setShowUserMenu(false);
+  const handleCreateProject = () => {
+    const newProject = ProjectService.createProject();
+    window.location.hash = `/project/${newProject.id}`;
   };
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
@@ -56,240 +34,227 @@ export function HomePage({ onOpenProject, onCreateProject }: HomePageProps) {
     }
   };
 
-  // 格式化相对时间
-  const formatRelativeTime = (timestamp: number) => {
-    const now = Date.now();
-    const diff = now - timestamp;
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
 
-    if (minutes < 1) return '刚刚编辑';
-    if (minutes < 60) return `${minutes} 分钟前编辑`;
-    if (hours < 24) return `${hours} 小时前编辑`;
-    if (days < 30) return `${days} 天前编辑`;
-    return `${Math.floor(days / 30)} 个月前编辑`;
+    if (diffMins < 1) return '刚刚';
+    if (diffMins < 60) return `${diffMins} 分钟前`;
+    if (diffHours < 24) return `${diffHours} 小时前`;
+    if (diffDays < 7) return `${diffDays} 天前`;
+    return `${date.getMonth() + 1}/${date.getDate()}`;
   };
 
-  // 渲染图片拼贴预览
-  const renderImageCollage = (project: Project) => {
-    const images = project.items.filter(item => item.type === 'image').map(item => item.src);
-    const count = images.length;
+  const getProjectPreview = (project: Project) => {
+    const image = project.items.find(item => item.type === 'image');
+    return image?.src || project.thumbnail;
+  };
 
-    if (count === 0) {
-      return (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="w-16 h-16 rounded-xl bg-white border border-gray-200 shadow-sm" />
-        </div>
-      );
-    }
-
-    if (count === 1) {
-      return (
-        <img src={images[0]} alt="" className="w-full h-full object-cover" />
-      );
-    }
-
-    if (count === 2) {
-      return (
-        <div className="absolute inset-0 flex gap-0.5">
-          <img src={images[0]} alt="" className="w-1/2 h-full object-cover" />
-          <img src={images[1]} alt="" className="w-1/2 h-full object-cover" />
-        </div>
-      );
-    }
-
-    if (count === 3) {
-      return (
-        <div className="absolute inset-0 flex gap-0.5">
-          <img src={images[0]} alt="" className="w-1/2 h-full object-cover" />
-          <div className="w-1/2 h-full flex flex-col gap-0.5">
-            <img src={images[1]} alt="" className="w-full h-1/2 object-cover" />
-            <img src={images[2]} alt="" className="w-full h-1/2 object-cover" />
-          </div>
-        </div>
-      );
-    }
-
-    // 4张及以上：左边大图，右边3个小图（最后一个可能有遮罩显示更多数量）
-    return (
-      <div className="absolute inset-0 flex gap-0.5">
-        <img src={images[0]} alt="" className="w-1/2 h-full object-cover" />
-        <div className="w-1/2 h-full flex flex-col gap-0.5">
-          <img src={images[1]} alt="" className="w-full h-1/3 object-cover" />
-          <img src={images[2]} alt="" className="w-full h-1/3 object-cover" />
-          <div className="w-full h-1/3 relative">
-            <img src={images[3]} alt="" className="w-full h-full object-cover" />
-            {count > 4 && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <span className="text-white font-medium text-sm">+{count - 4}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+  const getProjectStats = (project: Project) => {
+    const images = project.items.filter(i => i.type === 'image').length;
+    const shapes = project.items.filter(i => ['rectangle', 'circle', 'line', 'arrow'].includes(i.type)).length;
+    const texts = project.items.filter(i => i.type === 'text').length;
+    return { images, shapes, texts, total: project.items.length };
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-gray-100 selection:text-black">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-100">
-        <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-semibold tracking-tight text-gray-900">Mixboard</span>
-          </div>
+    <div className="min-h-screen bg-[#0a0a0b] text-white antialiased">
+      {/* Subtle gradient background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-[#0a0a0b] via-[#0f0f12] to-[#0a0a0b]" />
+      <div className="fixed top-0 right-0 w-[800px] h-[800px] bg-amber-500/[0.03] rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
+      <div className="fixed bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/[0.02] rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />
 
-          <div className="flex items-center gap-4">
-            {user ? (
-              // 已登录 - 显示用户头像和菜单
-              <div className="relative">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                >
-                  <img
-                    src={user.avatar}
-                    alt={user.nickname}
-                    className="w-8 h-8 rounded-full object-cover border border-gray-200"
-                  />
-                  <span className="text-sm text-gray-700 font-medium hidden sm:block">
-                    {user.nickname}
-                  </span>
-                </button>
-
-                {showUserMenu && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setShowUserMenu(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-2 w-36 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                      >
-                        <LogOut size={14} />
-                        退出登录
-                      </button>
-                    </div>
-                  </>
-                )}
+      <div className="relative z-10">
+        {/* Header */}
+        <header className="border-b border-white/[0.06] bg-[#0a0a0b]/80 backdrop-blur-xl sticky top-0 z-50">
+          <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                <Sparkles size={18} className="text-white" />
               </div>
-            ) : (
-              // 未登录 - 显示登录按钮
-              <button
-                onClick={() => setShowLoginModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg transition-colors text-sm font-medium"
-              >
-                登录
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+              <span className="text-lg font-semibold tracking-tight">
+                Canvas<span className="text-amber-400">AI</span>
+              </span>
+            </div>
 
-      {/* Main Content */}
-      <main className="pt-32 pb-20 px-6 max-w-[1200px] mx-auto">
-
-        {/* Hero Section */}
-        <div className="flex flex-col items-center justify-center mb-24">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 text-center tracking-tight leading-tight">
-            欢迎来到灵感屋
-          </h1>
-          <p className="text-lg text-gray-500 font-normal text-center max-w-xl leading-relaxed">
-            探索、延伸、重塑你的创意
-          </p>
-        </div>
-
-        {/* Action Bar */}
-        <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={onCreateProject}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-black text-white rounded-lg transition-all shadow-sm hover:shadow-md font-medium text-sm"
-          >
-            <Plus size={18} />
-            新建项目
-          </button>
-
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 text-sm font-medium transition-colors">
-              最近项目
-              <ChevronDown size={14} />
+            <button
+              onClick={handleCreateProject}
+              className="group flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg font-medium text-sm hover:bg-amber-400 transition-all duration-200 shadow-lg shadow-white/10 hover:shadow-amber-400/20"
+            >
+              <Plus size={18} strokeWidth={2.5} />
+              <span>新建项目</span>
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Main Content */}
+        <main className="max-w-6xl mx-auto px-6 py-12">
+          {/* Hero Section - Compact */}
+          <div className="mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+              <span className="text-white/90">创意</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400">工作室</span>
+            </h1>
+            <p className="text-white/40 text-lg max-w-xl">
+              AI 驱动的无限画布，释放你的创造力
+            </p>
+          </div>
 
+          {/* Quick Create Card */}
           {projects.length === 0 && (
             <div
-              onClick={onCreateProject}
-              className="col-span-full py-24 flex flex-col items-center justify-center border border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-gray-300 hover:bg-gray-50 transition-all group"
+              onClick={handleCreateProject}
+              className="group relative mb-12 p-8 rounded-2xl border border-dashed border-white/10 hover:border-amber-400/30 bg-white/[0.02] hover:bg-amber-400/[0.03] cursor-pointer transition-all duration-300"
             >
-              <div className="w-12 h-12 rounded-full bg-gray-50 group-hover:bg-white border border-gray-100 flex items-center justify-center mb-4 transition-colors">
-                <Plus size={20} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400/20 to-orange-500/20 flex items-center justify-center group-hover:from-amber-400/30 group-hover:to-orange-500/30 transition-all">
+                  <Plus size={28} className="text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-white mb-1 group-hover:text-amber-300 transition-colors">
+                    创建你的第一个项目
+                  </h3>
+                  <p className="text-white/40">
+                    开始使用 AI 画布，生成图像、添加文字和形状
+                  </p>
+                </div>
+                <ArrowRight size={24} className="text-white/20 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
               </div>
-              <p className="text-gray-500 font-medium text-sm">开始你的第一个创作</p>
             </div>
           )}
 
-          {projects.map(project => {
-            const imageCount = project.items.filter(item => item.type === 'image').length;
-
-            return (
-              <div
-                key={project.id}
-                onClick={() => onOpenProject(project)}
-                className="group flex flex-col gap-2 cursor-pointer"
-              >
-                {/* Card Preview - 图片拼贴 */}
-                <div className="relative aspect-[4/3] bg-gray-100 rounded-2xl overflow-hidden transition-all duration-200 group-hover:shadow-lg">
-                  {renderImageCollage(project)}
-
-                  {/* 悬停时显示的操作按钮 */}
-                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // 收藏功能待实现
-                      }}
-                      className="p-2 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white text-gray-600 hover:text-gray-900 transition-colors shadow-sm"
-                    >
-                      <Star size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(e, project.id)}
-                      className="p-2 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white text-gray-600 hover:text-red-500 transition-colors shadow-sm"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Card Footer */}
-                <div className="px-0.5">
-                  <h3 className="font-medium text-gray-900 text-sm leading-tight mb-0.5">
-                    {project.name}
-                  </h3>
-                  <p className="text-xs text-gray-400 font-normal">
-                    {formatRelativeTime(project.updatedAt)}
-                    {imageCount > 0 && ` · ${imageCount} 张图片`}
-                  </p>
+          {/* Projects Section */}
+          {projects.length > 0 && (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-white/90">我的项目</h2>
+                  <span className="px-2.5 py-1 text-xs font-medium bg-white/[0.06] text-white/50 rounded-full">
+                    {projects.length}
+                  </span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </main>
 
-      {/* 登录弹窗 */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onLoginSuccess={handleLoginSuccess}
-      />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.map((project, index) => {
+                  const preview = getProjectPreview(project);
+                  const stats = getProjectStats(project);
+                  const isHovered = hoveredProject === project.id;
+
+                  return (
+                    <div
+                      key={project.id}
+                      onClick={() => handleOpenProject(project)}
+                      onMouseEnter={() => setHoveredProject(project.id)}
+                      onMouseLeave={() => setHoveredProject(null)}
+                      className="group relative rounded-xl overflow-hidden cursor-pointer bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200"
+                      style={{
+                        animationDelay: `${index * 50}ms`,
+                        animation: 'fadeInUp 0.4s ease-out backwards'
+                      }}
+                    >
+                      {/* Preview Area */}
+                      <div className="aspect-[4/3] relative bg-[#111114] overflow-hidden">
+                        {preview ? (
+                          <>
+                            <img
+                              src={preview}
+                              alt=""
+                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-transparent to-transparent opacity-60" />
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <Layers size={32} className="text-white/10 mb-2" />
+                            <span className="text-xs text-white/20">空白画布</span>
+                          </div>
+                        )}
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={(e) => handleDelete(e, project.id)}
+                          className={`absolute top-3 right-3 p-2 rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-white/60 hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/10 transition-all ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+
+                        {/* Hover Overlay */}
+                        <div className={`absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                          <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium flex items-center gap-2">
+                            打开项目
+                            <ArrowRight size={14} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Info */}
+                      <div className="p-4">
+                        <h3 className="font-medium text-white/90 mb-2 truncate group-hover:text-amber-300 transition-colors">
+                          {project.name}
+                        </h3>
+                        <div className="flex items-center justify-between text-xs text-white/30">
+                          <span className="flex items-center gap-1.5">
+                            <Clock size={12} />
+                            {formatTime(project.updatedAt)}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Layers size={12} />
+                            {stats.total} 元素
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* New Project Card */}
+                <div
+                  onClick={handleCreateProject}
+                  className="group rounded-xl overflow-hidden cursor-pointer border-2 border-dashed border-white/[0.08] hover:border-amber-400/30 bg-transparent hover:bg-amber-400/[0.02] transition-all duration-200"
+                >
+                  <div className="aspect-[4/3] flex flex-col items-center justify-center p-6">
+                    <div className="w-12 h-12 rounded-xl bg-white/[0.04] group-hover:bg-amber-400/10 flex items-center justify-center mb-3 transition-colors">
+                      <Plus size={24} className="text-white/30 group-hover:text-amber-400 transition-colors" />
+                    </div>
+                    <span className="text-sm font-medium text-white/40 group-hover:text-amber-300 transition-colors">
+                      新建项目
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-white/[0.04] mt-auto">
+          <div className="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between text-xs text-white/20">
+            <span>© 2025 CanvasAI Studio</span>
+            <div className="flex items-center gap-6">
+              <a href="#" className="hover:text-white/40 transition-colors">关于</a>
+              <a href="#" className="hover:text-white/40 transition-colors">帮助</a>
+            </div>
+          </div>
+        </footer>
+      </div>
+
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(12px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

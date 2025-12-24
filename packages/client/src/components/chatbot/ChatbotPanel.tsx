@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { X, Trash2, Bot } from 'lucide-react';
+import { X, Plus, History, Maximize2, Minimize2 } from 'lucide-react';
 import { ChatMessage, ChatAttachment } from '@/types';
 import { chatStream, ChatMessageInput } from '@/services/api';
 import { MessageList } from './MessageList';
@@ -17,6 +17,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   const handleSend = useCallback(async (content: string, attachments: ChatAttachment[]) => {
     if (isLoading) return;
@@ -103,6 +104,10 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
     }
   }, [messages, webSearchEnabled, isLoading]);
 
+  const handleQuickPrompt = (prompt: string) => {
+    handleSend(prompt, []);
+  };
+
   const handleClear = () => {
     setMessages([]);
   };
@@ -110,29 +115,41 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed right-0 top-0 h-full w-[400px] bg-white border-l border-gray-200 shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+    <div
+      className={`fixed right-4 top-16 bottom-4 bg-[#fafafa] border border-gray-200/80 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300 rounded-2xl overflow-hidden ${
+        isMaximized ? 'left-4' : 'w-[420px]'
+      }`}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <Bot size={18} className="text-primary" />
-          </div>
-          <div>
-            <h3 className="font-medium text-gray-800">剧本助手</h3>
-            <p className="text-xs text-gray-500">帮你创作剧本和脚本</p>
-          </div>
+          <span className="font-medium text-gray-700">新对话</span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={handleClear}
             className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-            title="清空对话"
+            title="新建对话"
           >
-            <Trash2 size={18} />
+            <Plus size={18} />
+          </button>
+          <button
+            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            title="历史记录"
+          >
+            <History size={18} />
+          </button>
+          <button
+            onClick={() => setIsMaximized(!isMaximized)}
+            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            title={isMaximized ? "缩小" : "最大化"}
+          >
+            {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
           </button>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors ml-1"
+            title="关闭"
           >
             <X size={18} />
           </button>
@@ -140,7 +157,10 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
       </div>
 
       {/* Message List */}
-      <MessageList messages={messages} />
+      <MessageList
+        messages={messages}
+        onQuickPrompt={handleQuickPrompt}
+      />
 
       {/* Input */}
       <ChatInput
