@@ -1598,23 +1598,46 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
         {/* --- Empty State / Onboarding --- */}
         {items.length === 0 && !isProcessing && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
-            <div className="pointer-events-auto text-center">
-              <p className="text-gray-400 text-sm mb-4">试试这些</p>
-              <div className="flex gap-2">
+            <div className="pointer-events-auto text-center max-w-md">
+              {/* 三傻Logo动画 */}
+              <div className="mb-6 flex justify-center">
+                <div className="animate-bounce-slow">
+                  <Logo size={72} showText={false} />
+                </div>
+              </div>
+
+              {/* 欢迎文案 */}
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                三傻来帮你搞创作！
+              </h2>
+              <p className="text-gray-500 mb-8">
+                在下方输入你想要的画面，或者点击试试我们的灵感
+              </p>
+
+              {/* 灵感按钮 */}
+              <div className="flex flex-wrap justify-center gap-3">
                 {[
-                  { label: '未来城市', prompt: '赛博朋克风格的未来城市夜景，霓虹灯，雨天' },
-                  { label: '毛绒玩具', prompt: '一只毛茸茸的小熊玩偶，柔软材质，暖色调' },
-                  { label: '水彩风景', prompt: '江南水乡的水彩画，朦胧，意境' },
+                  { label: '🌃 赛博城市', prompt: '赛博朋克风格的未来城市夜景，霓虹灯，雨天，高楼大厦' },
+                  { label: '🧸 毛绒玩偶', prompt: '一只毛茸茸的小熊玩偶，柔软材质，暖色调，可爱' },
+                  { label: '🎨 水墨山水', prompt: '中国水墨画风格的山水画，云雾缭绕，意境深远' },
+                  { label: '🚀 太空探索', prompt: '宇航员在外太空漂浮，地球背景，星空璀璨' },
+                  { label: '🍜 美食诱惑', prompt: '一碗热气腾腾的拉面，精致摆盘，食欲满满' },
+                  { label: '🐱 萌宠日常', prompt: '一只橘猫慵懒地躺在阳光下，毛发蓬松，眯眼享受' },
                 ].map((item, i) => (
                   <button
                     key={i}
                     onClick={() => setPrompt(item.prompt)}
-                    className="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-full hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                    className="px-4 py-2.5 text-sm text-gray-700 bg-white border border-gray-200 rounded-xl hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 shadow-sm hover:shadow"
                   >
                     {item.label}
                   </button>
                 ))}
               </div>
+
+              {/* 提示 */}
+              <p className="mt-8 text-xs text-gray-400">
+                💡 也可以直接拖拽图片到画布，或使用左侧工具开始创作
+              </p>
             </div>
           </div>
         )}
