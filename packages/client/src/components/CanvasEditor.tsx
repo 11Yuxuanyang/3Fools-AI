@@ -2081,14 +2081,12 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
 
         {/* AI 助手按钮 */}
         <div
-          className="relative select-none hover:scale-110 active:scale-95 transition-all duration-200"
+          className="relative select-none hover:scale-110 active:scale-95 transition-all duration-200 drop-shadow-lg"
           style={{
             animation: isWiggling ? 'wiggle 0.2s ease-in-out infinite' : undefined,
           }}
         >
-          <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-lg shadow-gray-300/50 border border-gray-100">
-            <Logo size={36} showText={false} />
-          </div>
+          <Logo size={52} showText={false} />
         </div>
       </div>
 
