@@ -229,26 +229,40 @@ export function HomePage(_props: HomePageProps) {
 
         {/* Main Content */}
         <div className="relative max-w-3xl mx-auto">
-          {/* Main Title */}
+          {/* Main Title - Pixel Style */}
           <div
             className="text-center mb-10"
             style={{ animation: 'fadeInUp 0.6s ease-out' }}
           >
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
-              每个脑洞，都值得被画出来
+            <h1
+              className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight mb-4"
+              style={{
+                fontFamily: '"Press Start 2P", monospace',
+                textShadow: '3px 3px 0 #e5e5e5',
+                letterSpacing: '2px'
+              }}
+            >
+              每个脑洞
+              <br />
+              <span className="text-[#4ECDC4]">都值得</span>被画出来
             </h1>
 
-            <p className="text-lg text-gray-500 max-w-xl mx-auto">
-              AI 生图 + 智能编辑 + 分镜创作，专业级创作工具，人人可用
+            <p className="text-base text-gray-500 max-w-xl mx-auto mt-6" style={{ fontFamily: 'monospace' }}>
+              [ AI 生图 ] + [ 智能编辑 ] + [ 分镜创作 ]
             </p>
           </div>
 
-          {/* Chat Input Box */}
+          {/* Chat Input Box - Pixel Style */}
           <div
             className="relative"
             style={{ animation: 'fadeInUp 0.6s ease-out 0.1s both' }}
           >
-            <div className="bg-gray-100 rounded-2xl p-4 shadow-sm">
+            <div
+              className="bg-white p-4 border-4 border-gray-900"
+              style={{
+                boxShadow: '6px 6px 0 #e5e5e5',
+              }}
+            >
               <textarea
                 value={promptInput}
                 onChange={(e) => setPromptInput(e.target.value)}
@@ -258,53 +272,58 @@ export function HomePage(_props: HomePageProps) {
                     handlePromptSubmit();
                   }
                 }}
-                placeholder="描述你想要的画面，例如：一只穿着宇航服的猫咪在月球上散步..."
-                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg resize-none outline-none min-h-[80px] max-h-[200px]"
+                placeholder="► 描述你想要的画面..."
+                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-base resize-none outline-none min-h-[80px] max-h-[200px]"
+                style={{ fontFamily: 'monospace' }}
                 rows={2}
               />
 
-              {/* Submit Button */}
+              {/* Submit Button - Pixel Style */}
               <div className="flex justify-end mt-2">
                 <button
                   onClick={() => handlePromptSubmit()}
                   disabled={!promptInput.trim()}
-                  className={`p-3 rounded-xl transition-all ${
+                  className={`px-4 py-2 border-3 font-bold text-sm transition-all ${
                     promptInput.trim()
-                      ? 'bg-gray-900 text-white hover:bg-gray-800 cursor-pointer'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      ? 'bg-[#4ECDC4] border-gray-900 text-gray-900 hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none cursor-pointer'
+                      : 'bg-gray-200 border-gray-400 text-gray-400 cursor-not-allowed'
                   }`}
+                  style={{
+                    boxShadow: promptInput.trim() ? '4px 4px 0 #1a1a1a' : 'none',
+                    fontFamily: 'monospace'
+                  }}
                 >
-                  <ArrowUp size={20} />
+                  生成 ▶
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Quick Action Chips */}
+          {/* Quick Action Chips - Pixel Style */}
           <div
-            className="flex flex-wrap items-center justify-center gap-2 mt-6"
+            className="flex flex-wrap items-center justify-center gap-3 mt-8"
             style={{ animation: 'fadeInUp 0.6s ease-out 0.2s both' }}
           >
             <button
               onClick={() => handlePromptSubmit('一只可爱的柴犬在樱花树下')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-600 hover:bg-gray-200 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF6B6B] text-white border-2 border-gray-900 text-sm font-bold hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+              style={{ boxShadow: '3px 3px 0 #1a1a1a', fontFamily: 'monospace' }}
             >
-              <Sparkles size={16} />
-              AI 生图
+              ✦ AI 生图
             </button>
             <button
               onClick={() => handleCreateProject()}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-600 hover:bg-gray-200 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#FFE66D] text-gray-900 border-2 border-gray-900 text-sm font-bold hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+              style={{ boxShadow: '3px 3px 0 #1a1a1a', fontFamily: 'monospace' }}
             >
-              <Palette size={16} />
-              图片编辑
+              ✎ 图片编辑
             </button>
             <button
               onClick={() => handleCreateProject()}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm text-gray-600 hover:bg-gray-200 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#DDA0DD] text-white border-2 border-gray-900 text-sm font-bold hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+              style={{ boxShadow: '3px 3px 0 #1a1a1a', fontFamily: 'monospace' }}
             >
-              <Wand2 size={16} />
-              分镜脚本
+              ▤ 分镜脚本
             </button>
           </div>
         </div>
