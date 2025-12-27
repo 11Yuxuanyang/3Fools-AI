@@ -23,14 +23,22 @@ jobs:
             # 拉取最新代码
             git pull origin main
 
-            # 安装依赖
+            # 加载 nvm
             source ~/.nvm/nvm.sh
-            npm install
 
-            # 构建项目
-            npm run build
+            # 安装依赖
+            npm install --force
 
-            # 重启后端服务
-            pm2 restart canvasai || pm2 start packages/server/dist/index.js --name canvasai
+            # 构建前端
+            npm run build:client
+
+            # 确保日志目录存在
+            mkdir -p /www/wwwroot/canvasai/logs
+
+            # 使用 PM2 ecosystem 配置重启后端（tsx 运行源码）
+            cd packages/server
+            pm2 delete canvasai 2>/dev/null || true
+            pm2 start ecosystem.config.cjs
+            pm2 save
 
             echo "✅ 部署完成: $(date)"
