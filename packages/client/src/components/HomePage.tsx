@@ -15,6 +15,12 @@ interface User {
 interface HomePageProps {
   onOpenProject?: (project: Project) => void;
   onCreateProject?: () => void;
+  onLogout?: () => void;
+  user?: {
+    id: string;
+    nickname: string;
+    avatar?: string;
+  } | null;
 }
 
 const typingPhrases = [
@@ -35,14 +41,21 @@ const typingPhrases = [
   '北欧风格的温馨小木屋',
 ];
 
-export function HomePage(_props: HomePageProps) {
+export function HomePage({ onLogout, user: propUser }: HomePageProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [sortBy, setSortBy] = useState<'recent' | 'name'>('recent');
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(propUser as User | null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // 同步来自 props 的用户状态
+  useEffect(() => {
+    if (propUser) {
+      setUser(propUser as User);
+    }
+  }, [propUser]);
   const [promptInput, setPromptInput] = useState('');
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -110,6 +123,9 @@ export function HomePage(_props: HomePageProps) {
     authLogout(); // 清理 token 和用户信息
     setUser(null);
     setShowUserMenu(false);
+    if (onLogout) {
+      onLogout(); // 通知父组件
+    }
   };
 
   const handleOpenProject = (project: Project) => {

@@ -44,9 +44,15 @@ import {
 interface CanvasEditorProps {
   project: Project;
   onBack: () => void;
+  onLogout?: () => void;
+  user?: {
+    id: string;
+    nickname: string;
+    avatar?: string;
+  } | null;
 }
 
-export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
+export function CanvasEditor({ project, onBack, onLogout: _onLogout, user: _user }: CanvasEditorProps) {
   // --- State ---
   const [items, setItems] = useState<CanvasItem[]>(project.items);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);

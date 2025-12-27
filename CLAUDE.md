@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-三傻大闹AI圈 (CanvasAI Studio) - 前后端分离的 AI 图像生成和编辑画布应用。支持多 AI 模型提供商、实时协作、剧本分镜。
+三傻大闹AI圈 (CanvasAI Studio) - 前后端分离的 AI 图像生成和编辑画布应用。支持多 AI 模型提供商、实时协作。
 
 ## 项目结构 (Monorepo)
 
@@ -48,7 +48,7 @@ npm run format:check
 
 ## 后端配置
 
-编辑 `packages/server/.env` 配置多个 AI 提供商:
+复制 `packages/server/.env.example` 为 `.env` 并配置 AI 提供商:
 
 ```env
 # 默认提供商选择
@@ -69,6 +69,11 @@ DOUBAO_IMAGE_MODEL=
 # OpenRouter (推荐聊天)
 OPENROUTER_API_KEY=
 OPENROUTER_CHAT_MODEL=minimax/minimax-m2.1
+
+# 通义千问 (阿里云百炼)
+QWEN_API_KEY=
+QWEN_IMAGE_MODEL=
+QWEN_CHAT_MODEL=
 ```
 
 ### 添加新的 AI 提供商
