@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: 'canvasai',
-      script: 'npx',
-      args: 'tsx src/index.ts',
+      script: './node_modules/.bin/tsx',
+      args: 'src/index.ts',
       cwd: '/www/wwwroot/canvasai/packages/server',
       env: {
         NODE_ENV: 'production',
