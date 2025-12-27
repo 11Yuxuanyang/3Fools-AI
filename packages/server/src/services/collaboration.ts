@@ -37,7 +37,6 @@ const COLORS = [
 ];
 
 class CollaborationService {
-  private io: Server | null = null;
   private rooms: Map<string, RoomInfo> = new Map();
   private userSockets: Map<string, Socket> = new Map();
   private colorIndex = 0;
@@ -46,7 +45,6 @@ class CollaborationService {
    * 初始化 Socket.io 服务
    */
   init(io: Server) {
-    this.io = io;
 
     io.on('connection', (socket) => {
       console.log(`[Collab] 用户连接: ${socket.id}`);

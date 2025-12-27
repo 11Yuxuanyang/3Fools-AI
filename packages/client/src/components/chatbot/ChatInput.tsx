@@ -4,7 +4,8 @@ import { ChatAttachment } from '@/types';
 import { generateId } from '@/utils/id';
 
 // 获取文件类型图标
-const getFileIcon = (mimeType: string) => {
+const getFileIcon = (mimeType: string | undefined) => {
+  if (!mimeType) return <File size={20} className="text-gray-600" />;
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) {
     return <FileSpreadsheet size={20} className="text-green-600" />;
   }
@@ -156,7 +157,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         <div className="flex flex-wrap gap-2 mb-3 px-2">
           {attachments.map((attachment) => (
             <div key={attachment.id} className="relative group animate-in zoom-in-95 duration-200">
-              {attachment.type.startsWith('image/') ? (
+              {attachment.type?.startsWith('image/') ? (
                 <img
                   src={attachment.previewUrl}
                   alt={attachment.name}

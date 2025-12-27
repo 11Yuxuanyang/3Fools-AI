@@ -28,21 +28,21 @@ export const MAX_DISPLAY_SIZE = 512;
 // 默认颜色
 export const COLORS = {
   // 文字
-  TEXT_DEFAULT: '#1f2937',
+  TEXT_DEFAULT: '#000000',
 
   // 矩形
-  RECT_FILL: '#e5e7eb',
-  RECT_STROKE: '#9ca3af',
+  RECT_FILL: 'transparent',
+  RECT_STROKE: '#000000',
 
   // 圆形
-  CIRCLE_FILL: '#ddd6fe',
-  CIRCLE_STROKE: '#a78bfa',
+  CIRCLE_FILL: 'transparent',
+  CIRCLE_STROKE: '#000000',
 
   // 画笔
-  BRUSH_STROKE: '#8b5cf6',
+  BRUSH_STROKE: '#000000',
 
   // 线条
-  LINE_STROKE: '#6b7280',
+  LINE_STROKE: '#000000',
 
   // 遮罩画笔
   MASK_BRUSH: 'rgba(59, 130, 246, 0.5)',

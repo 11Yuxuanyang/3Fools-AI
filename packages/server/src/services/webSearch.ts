@@ -1,6 +1,6 @@
 /**
  * 网络搜索服务
- * 支持 DuckDuckGo 搜索
+ * 支持 SearXNG (推荐自建) 和 DuckDuckGo (备用)
  */
 
 export interface SearchResult {
@@ -14,14 +14,49 @@ export interface SearchResponse {
   results: SearchResult[];
 }
 
+// SearXNG 配置
+const SEARXNG_URL = process.env.SEARXNG_URL || '';
+
 /**
- * 使用 DuckDuckGo Instant Answer API 进行搜索
+ * 使用 SearXNG 进行搜索
  */
-export async function searchWeb(query: string, maxResults: number = 5): Promise<SearchResponse> {
-  console.log(`[Web Search] 搜索: "${query}"`);
+async function searchWithSearXNG(query: string, maxResults: number): Promise<SearchResult[]> {
+  if (!SEARXNG_URL) {
+    return [];
+  }
 
   try {
-    // 使用 DuckDuckGo HTML 搜索
+    const searchUrl = `${SEARXNG_URL}/search?q=${encodeURIComponent(query)}&format=json&language=zh-CN`;
+
+    const response = await fetch(searchUrl, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error('[SearXNG] 请求失败:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+
+    return (data.results || []).slice(0, maxResults).map((item: { title?: string; url?: string; content?: string }) => ({
+      title: item.title || '',
+      url: item.url || '',
+      snippet: item.content || '',
+    }));
+  } catch (error) {
+    console.error('[SearXNG] 搜索出错:', error);
+    return [];
+  }
+}
+
+/**
+ * 使用 DuckDuckGo HTML 搜索 (备用方案)
+ */
+async function searchWithDuckDuckGo(query: string, maxResults: number): Promise<SearchResult[]> {
+  try {
     const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
 
     const response = await fetch(searchUrl, {
@@ -33,46 +68,33 @@ export async function searchWeb(query: string, maxResults: number = 5): Promise<
     });
 
     if (!response.ok) {
-      console.error('[Web Search] 搜索请求失败:', response.status);
-      return { query, results: [] };
+      console.error('[DuckDuckGo] 请求失败:', response.status);
+      return [];
     }
 
     const html = await response.text();
-
-    // 简单解析 HTML 提取搜索结果
-    const results = parseSearchResults(html, maxResults);
-
-    console.log(`[Web Search] 找到 ${results.length} 条结果`);
-    return { query, results };
+    return parseDuckDuckGoResults(html, maxResults);
   } catch (error) {
-    console.error('[Web Search] 搜索出错:', error);
-    return { query, results: [] };
+    console.error('[DuckDuckGo] 搜索出错:', error);
+    return [];
   }
 }
 
 /**
  * 解析 DuckDuckGo HTML 搜索结果
  */
-function parseSearchResults(html: string, maxResults: number): SearchResult[] {
+function parseDuckDuckGoResults(html: string, maxResults: number): SearchResult[] {
   const results: SearchResult[] = [];
-
-  // 使用正则表达式提取搜索结果
-  // DuckDuckGo HTML 结果格式: <a class="result__a" href="URL">Title</a>
-  // 摘要在 <a class="result__snippet">...</a>
 
   const resultBlocks = html.match(/<div class="result[^"]*"[^>]*>[\s\S]*?<\/div>\s*<\/div>/g) || [];
 
   for (const block of resultBlocks.slice(0, maxResults)) {
-    // 提取 URL
     const urlMatch = block.match(/href="([^"]+)"\s+class="result__a"/);
-    // 提取标题
     const titleMatch = block.match(/class="result__a"[^>]*>([^<]+)</);
-    // 提取摘要
     const snippetMatch = block.match(/class="result__snippet"[^>]*>([\s\S]*?)<\/a>/);
 
     if (urlMatch && titleMatch) {
       let url = urlMatch[1];
-      // DuckDuckGo 的 URL 可能是重定向链接，需要解析
       if (url.includes('uddg=')) {
         const uddgMatch = url.match(/uddg=([^&]+)/);
         if (uddgMatch) {
@@ -105,6 +127,31 @@ function cleanHtml(text: string): string {
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * 搜索网络
+ * 优先使用 SearXNG，失败则回退到 DuckDuckGo
+ */
+export async function searchWeb(query: string, maxResults: number = 5): Promise<SearchResponse> {
+  console.log(`[Web Search] 搜索: "${query}"`);
+
+  let results: SearchResult[] = [];
+
+  // 优先使用 SearXNG
+  if (SEARXNG_URL) {
+    console.log(`[Web Search] 使用 SearXNG: ${SEARXNG_URL}`);
+    results = await searchWithSearXNG(query, maxResults);
+  }
+
+  // SearXNG 失败或未配置，回退到 DuckDuckGo
+  if (results.length === 0 && !SEARXNG_URL) {
+    console.log('[Web Search] 使用 DuckDuckGo (备用)');
+    results = await searchWithDuckDuckGo(query, maxResults);
+  }
+
+  console.log(`[Web Search] 找到 ${results.length} 条结果`);
+  return { query, results };
 }
 
 /**

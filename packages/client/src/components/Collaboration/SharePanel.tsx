@@ -16,7 +16,7 @@ interface SharePanelProps {
 
 export const SharePanel: React.FC<SharePanelProps> = memo(({
   collaborators,
-  isConnected,
+  isConnected: _isConnected,
   myColor,
   projectId,
 }) => {

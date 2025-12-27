@@ -44,7 +44,7 @@ export function useYjsSync(options: UseYjsSyncOptions) {
     }
 
     // 监听 Yjs 变化
-    itemsMap.observe((event) => {
+    itemsMap.observe((_event) => {
       // 忽略本地变化
       if (isLocalChangeRef.current) return;
 

@@ -214,8 +214,8 @@ export class OpenRouterChatProvider implements ChatProvider {
 
     console.log(`[OpenRouter Chat] 开始对话: model=${this.model}, messages=${messages.length}, hasCanvas=${!!canvasContext}`);
 
-    let conversationMessages = this.convertMessages(messages);
-    let totalUsage = { promptTokens: 0, completionTokens: 0 };
+    const conversationMessages = this.convertMessages(messages);
+    const totalUsage = { promptTokens: 0, completionTokens: 0 };
 
     // 最多进行 3 轮工具调用
     for (let round = 0; round < 3; round++) {
@@ -326,7 +326,7 @@ export class OpenRouterChatProvider implements ChatProvider {
 
     console.log(`[OpenRouter Chat] 开始流式对话: model=${this.model}, messages=${messages.length}, hasCanvas=${!!canvasContext}`);
 
-    let conversationMessages = this.convertMessages(messages);
+    const conversationMessages = this.convertMessages(messages);
 
     // 最多进行 3 轮工具调用
     for (let round = 0; round < 3; round++) {
@@ -372,7 +372,7 @@ export class OpenRouterChatProvider implements ChatProvider {
 
       let buffer = '';
       let fullContent = '';
-      let toolCalls: Array<{
+      const toolCalls: Array<{
         id: string;
         type: 'function';
         function: { name: string; arguments: string };

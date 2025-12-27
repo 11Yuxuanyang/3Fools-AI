@@ -164,6 +164,10 @@ export class VectorStore {
    * 删除文档的所有向量
    */
   async deleteDocument(documentId: string): Promise<void> {
+    // 验证 documentId 格式，防止注入攻击
+    if (!/^doc_[a-f0-9-]{36}$/.test(documentId)) {
+      throw new Error('无效的文档 ID 格式');
+    }
     const table = await this.ensureTable();
     await table.delete(`"documentId" = '${documentId}'`);
     console.log(`[VectorStore] 删除文档向量: ${documentId}`);
@@ -202,6 +206,10 @@ export class VectorStore {
    * 检查文档是否已存在
    */
   async documentExists(documentId: string): Promise<boolean> {
+    // 验证 documentId 格式
+    if (!/^doc_[a-f0-9-]{36}$/.test(documentId)) {
+      return false;
+    }
     const table = await this.ensureTable();
     const results = await table.query()
       .where(`"documentId" = '${documentId}'`)

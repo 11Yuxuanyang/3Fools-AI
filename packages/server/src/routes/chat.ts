@@ -121,7 +121,8 @@ async function processDocumentAttachments(messages: ChatMessageInput[]): Promise
 
     for (const attachment of msg.attachments) {
       // 检查是否为文档类型（使用文件名和 MIME 类型）
-      const fileName = attachment.name || `document.${attachment.type.split('/').pop()}`;
+      const mimeType = attachment.type || '';
+      const fileName = attachment.name || `document.${mimeType.split('/').pop() || 'bin'}`;
       const isDocument = documentParser.isSupported(fileName, attachment.type);
 
       if (isDocument) {

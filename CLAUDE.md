@@ -10,10 +10,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 ├── packages/
-│   ├── client/          # 前端 (React + Vite)
-│   └── server/          # 后端 (Express + TypeScript)
+│   ├── client/          # 前端 (React + Vite, 端口 3000)
+│   └── server/          # 后端 (Express + TypeScript, 端口 3001)
 └── package.json         # workspace 配置
 ```
+
+## 环境要求
+
+- Node.js 18+
 
 ## Commands
 
@@ -149,3 +153,19 @@ OPENROUTER_CHAT_MODEL=minimax/minimax-m2.1
 - 聊天时自动传递画布元素信息
 - 支持多模态消息（图片 + 文字）
 - 系统提示词使用 XML 结构化格式
+
+## 开发注意事项
+
+### 弹窗/模态框
+- 需要覆盖全屏的弹窗使用 `createPortal(content, document.body)` 渲染到 body
+- 避免父元素堆叠上下文导致 z-index 失效
+- 推荐 z-index: 遮罩层 `z-[9998]}`, 弹窗内容 `z-[9999]`
+
+### UI 组件
+- 右上角按钮组（傻币、社群、分享）使用统一的圆角样式 `rounded-2xl`
+- 颜色使用内联 style 而非 Tailwind 类名时，需同时处理 hover 状态
+- 下拉面板居中对齐按钮: `left-1/2 -translate-x-1/2`
+
+### 类型定义
+- `CanvasItem.type` 包含 `connection` 类型，确保相关接口同步更新
+- `packages/client/src/types.ts` 和 `packages/client/src/services/api.ts` 中有重复的类型定义，修改时需同步

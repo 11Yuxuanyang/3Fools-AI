@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { MoreVertical, ChevronDown, Trash2, Copy, Edit3, LogOut, ArrowUp, Plus } from 'lucide-react';
 import { Project } from '../types';
 import * as ProjectService from '../services/projectService';
 import { LoginModal } from './LoginModal';
 import { Logo } from './Logo';
+import { logout as authLogout, getUser } from '../services/auth';
 
 interface User {
   id: string;
@@ -82,13 +83,19 @@ export function HomePage(_props: HomePageProps) {
 
   useEffect(() => {
     setProjects(ProjectService.getProjects());
-    // 检查本地存储的用户
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem('user');
+    // 检查本地存储的用户（优先使用 auth 服务）
+    const authUser = getUser();
+    if (authUser) {
+      setUser(authUser as User);
+    } else {
+      // 回退到旧的 user key
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (_e) {
+          localStorage.removeItem('user');
+        }
       }
     }
   }, []);
@@ -100,7 +107,7 @@ export function HomePage(_props: HomePageProps) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    authLogout(); // 清理 token 和用户信息
     setUser(null);
     setShowUserMenu(false);
   };

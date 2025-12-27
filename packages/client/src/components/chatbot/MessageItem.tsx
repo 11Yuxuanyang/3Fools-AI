@@ -30,7 +30,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
             <div className="flex flex-wrap gap-2 mt-2">
               {message.attachments.map((attachment) => (
                 <div key={attachment.id}>
-                  {attachment.type.startsWith('image/') ? (
+                  {attachment.type?.startsWith('image/') ? (
                     <img
                       src={attachment.previewUrl || attachment.content}
                       alt={attachment.name}
@@ -72,7 +72,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
             <div className="flex flex-wrap gap-2 mt-2 ml-1">
               {message.attachments.map((attachment) => (
                 <div key={attachment.id}>
-                  {attachment.type.startsWith('image/') ? (
+                  {attachment.type?.startsWith('image/') ? (
                     <img
                       src={attachment.previewUrl || attachment.content}
                       alt={attachment.name}

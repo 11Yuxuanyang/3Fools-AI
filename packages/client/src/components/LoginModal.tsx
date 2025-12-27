@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, RefreshCw, CheckCircle, AlertCircle, ArrowLeft, Smartphone } from 'lucide-react';
+import { saveAuth } from '../services/auth';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -77,7 +78,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
         setPhoneError(data.error || '发送失败，请重试');
         setStatus('error');
       }
-    } catch (e) {
+    } catch (_e) {
       setPhoneError('网络错误，请重试');
       setStatus('error');
     }
@@ -107,6 +108,10 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
 
       if (data.success && data.data.user) {
         setStatus('confirmed');
+        // 保存 token 和用户信息
+        if (data.data.token) {
+          saveAuth(data.data.token, data.data.user);
+        }
         localStorage.setItem('user', JSON.stringify(data.data.user));
 
         setTimeout(() => {
@@ -118,7 +123,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
         setPhoneError(data.error || '验证失败');
         setStatus('error');
       }
-    } catch (e) {
+    } catch (_e) {
       setPhoneError('网络错误，请重试');
       setStatus('error');
     }
@@ -150,7 +155,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
         setError(data.error || '获取二维码失败');
         setStatus('error');
       }
-    } catch (e) {
+    } catch (_e) {
       setError('网络错误，请重试');
       setStatus('error');
     }

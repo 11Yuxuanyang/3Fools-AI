@@ -1,4 +1,4 @@
-import { config, ProviderConfig } from '../config.js';
+import { config } from '../config.js';
 import { AIProvider } from './base.js';
 import { CustomProvider } from './custom.js';
 import { DoubaoProvider } from './doubao.js';

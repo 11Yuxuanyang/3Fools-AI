@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, Component, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -8,6 +8,42 @@ import { Copy, Check } from 'lucide-react';
 interface MarkdownRendererProps {
   content: string;
   isStreaming?: boolean;
+}
+
+// 错误边界组件 - 防止 Markdown 渲染错误导致白屏
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class MarkdownErrorBoundary extends Component<
+  { children: ReactNode; fallbackContent: string },
+  ErrorBoundaryState
+> {
+  constructor(props: { children: ReactNode; fallbackContent: string }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[MarkdownRenderer] 渲染错误:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // 渲染失败时显示纯文本
+      return (
+        <div className="text-sm text-gray-700 whitespace-pre-wrap">
+          {this.props.fallbackContent}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 // 代码块组件
@@ -55,7 +91,8 @@ const CodeBlock = memo(({ language, children }: { language: string; children: st
 
 CodeBlock.displayName = 'CodeBlock';
 
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(({ content, isStreaming }) => {
+// 内部 Markdown 渲染组件
+const MarkdownContent: React.FC<MarkdownRendererProps> = memo(({ content, isStreaming }) => {
   return (
     <div className="markdown-content">
       <ReactMarkdown
@@ -120,9 +157,21 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(({ content
               );
             }
 
+            // 安全地提取代码内容
+            let codeContent = '';
+            if (typeof children === 'string') {
+              codeContent = children;
+            } else if (Array.isArray(children)) {
+              codeContent = children.map(child =>
+                typeof child === 'string' ? child : ''
+              ).join('');
+            } else if (children != null) {
+              codeContent = String(children);
+            }
+
             return (
               <CodeBlock language={match?.[1] || ''}>
-                {String(children).replace(/\n$/, '')}
+                {codeContent.replace(/\n$/, '')}
               </CodeBlock>
             );
           },
@@ -196,6 +245,17 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(({ content
         <span className="inline-block w-1.5 h-4 bg-gray-400 animate-pulse ml-0.5 rounded-sm" />
       )}
     </div>
+  );
+});
+
+MarkdownContent.displayName = 'MarkdownContent';
+
+// 导出包装了错误边界的组件
+export const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(({ content, isStreaming }) => {
+  return (
+    <MarkdownErrorBoundary fallbackContent={content}>
+      <MarkdownContent content={content} isStreaming={isStreaming} />
+    </MarkdownErrorBoundary>
   );
 });
 

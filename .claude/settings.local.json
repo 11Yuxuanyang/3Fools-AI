@@ -22,7 +22,21 @@
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
       "Bash(npm view:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(npm run lint:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:chinese-font.netlify.app)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git log:*)",
+      "Bash(timeout 5 npm run dev:*)",
+      "Bash(docker run:*)",
+      "Bash(docker rm:*)",
+      "Bash(timeout 10 npm run dev:server:*)",
+      "Bash(zip:*)",
+      "Bash(npm audit:*)"
     ],
     "deny": [],
     "ask": []

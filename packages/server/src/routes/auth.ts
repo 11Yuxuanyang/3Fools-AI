@@ -1,5 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { config } from '../config.js';
+import {
+  generateToken,
+  generateVerificationCode as generateCode,
+  saveVerificationCode,
+  verifyCode as verifyDbCode,
+  canSendCode,
+  getOrCreateUserByPhone,
+} from '../services/authService.js';
+import { isSupabaseAvailable } from '../lib/supabase.js';
 
 export const authRouter = Router();
 
@@ -72,7 +81,7 @@ setInterval(() => {
  * GET /api/auth/wechat/qrcode
  * 获取微信登录二维码信息
  */
-authRouter.get('/wechat/qrcode', (req: Request, res: Response) => {
+authRouter.get('/wechat/qrcode', (_req: Request, res: Response) => {
   const state = generateState();
 
   // 保存登录状态
@@ -279,7 +288,7 @@ authRouter.get('/user', (req: Request, res: Response) => {
  * POST /api/auth/logout
  * 登出
  */
-authRouter.post('/logout', (req: Request, res: Response) => {
+authRouter.post('/logout', (_req: Request, res: Response) => {
   res.json({
     success: true,
     message: '已登出',
@@ -287,11 +296,6 @@ authRouter.post('/logout', (req: Request, res: Response) => {
 });
 
 // ============ 手机号登录/注册 ============
-
-// 生成6位验证码
-function generateVerificationCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
 
 // 清理过期验证码
 setInterval(() => {
@@ -308,7 +312,7 @@ setInterval(() => {
  * POST /api/auth/phone/send-code
  * 发送手机验证码
  */
-authRouter.post('/phone/send-code', (req: Request, res: Response) => {
+authRouter.post('/phone/send-code', async (req: Request, res: Response) => {
   const { phone } = req.body;
 
   // 验证手机号格式
@@ -319,19 +323,34 @@ authRouter.post('/phone/send-code', (req: Request, res: Response) => {
     });
   }
 
-  // 检查是否频繁发送
-  const existing = verificationCodes.get(phone);
-  if (existing && Date.now() - existing.createdAt < 60 * 1000) {
-    return res.json({
-      success: false,
-      error: '发送太频繁，请稍后再试',
-    });
+  // 如果 Supabase 可用，使用数据库检查发送频率
+  if (isSupabaseAvailable()) {
+    const allowed = await canSendCode(phone);
+    if (!allowed) {
+      return res.json({
+        success: false,
+        error: '发送太频繁，请稍后再试',
+      });
+    }
+  } else {
+    // 回退到内存检查
+    const existing = verificationCodes.get(phone);
+    if (existing && Date.now() - existing.createdAt < 60 * 1000) {
+      return res.json({
+        success: false,
+        error: '发送太频繁，请稍后再试',
+      });
+    }
   }
 
   // 生成验证码
-  const code = generateVerificationCode();
+  const code = generateCode();
 
   // 存储验证码
+  if (isSupabaseAvailable()) {
+    await saveVerificationCode(phone, code);
+  }
+  // 同时保存到内存（作为回退）
   verificationCodes.set(phone, {
     code,
     createdAt: Date.now(),
@@ -354,8 +373,8 @@ authRouter.post('/phone/send-code', (req: Request, res: Response) => {
  * POST /api/auth/phone/verify
  * 验证手机验证码并登录/注册
  */
-authRouter.post('/phone/verify', (req: Request, res: Response) => {
-  const { phone, code, mode } = req.body;
+authRouter.post('/phone/verify', async (req: Request, res: Response) => {
+  const { phone, code, mode: _mode } = req.body;
 
   // 验证参数
   if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
@@ -372,71 +391,102 @@ authRouter.post('/phone/verify', (req: Request, res: Response) => {
     });
   }
 
-  // 获取存储的验证码
-  const stored = verificationCodes.get(phone);
+  // 验证验证码
+  let isValid = false;
 
-  if (!stored) {
-    return res.json({
-      success: false,
-      error: '验证码已过期，请重新获取',
-    });
+  // 优先使用 Supabase 验证
+  if (isSupabaseAvailable()) {
+    isValid = await verifyDbCode(phone, code);
   }
 
-  // 检查尝试次数
-  if (stored.attempts >= 5) {
-    verificationCodes.delete(phone);
-    return res.json({
-      success: false,
-      error: '验证码错误次数过多，请重新获取',
-    });
+  // 如果 Supabase 验证失败，尝试内存验证（回退）
+  if (!isValid) {
+    const stored = verificationCodes.get(phone);
+
+    if (!stored) {
+      return res.json({
+        success: false,
+        error: '验证码已过期，请重新获取',
+      });
+    }
+
+    if (stored.attempts >= 5) {
+      verificationCodes.delete(phone);
+      return res.json({
+        success: false,
+        error: '验证码错误次数过多，请重新获取',
+      });
+    }
+
+    if (Date.now() - stored.createdAt > 5 * 60 * 1000) {
+      verificationCodes.delete(phone);
+      return res.json({
+        success: false,
+        error: '验证码已过期，请重新获取',
+      });
+    }
+
+    if (stored.code !== code) {
+      stored.attempts++;
+      return res.json({
+        success: false,
+        error: '验证码错误',
+      });
+    }
+
+    isValid = true;
   }
 
-  // 验证码过期检查（5分钟）
-  if (Date.now() - stored.createdAt > 5 * 60 * 1000) {
-    verificationCodes.delete(phone);
-    return res.json({
-      success: false,
-      error: '验证码已过期，请重新获取',
-    });
-  }
-
-  // 验证码错误
-  if (stored.code !== code) {
-    stored.attempts++;
-    return res.json({
-      success: false,
-      error: '验证码错误',
-    });
-  }
-
-  // 验证成功，删除验证码
+  // 验证成功，清理内存中的验证码
   verificationCodes.delete(phone);
 
   // 查找或创建用户
-  let user = phoneUsers.get(phone);
+  let user;
+  let token = '';
 
-  if (!user) {
-    // 注册新用户
-    user = {
-      id: generateState(),
-      phone,
-      nickname: `用户${phone.slice(-4)}`,
-      avatar: '',
-      createdAt: Date.now(),
-    };
-    phoneUsers.set(phone, user);
-    console.log(`[Auth] 新用户注册: ${maskPhone(phone)}`);
-  } else {
-    console.log(`[Auth] 用户登录: ${maskPhone(phone)}`);
+  if (isSupabaseAvailable()) {
+    // 使用 Supabase
+    user = await getOrCreateUserByPhone(phone);
+    if (user) {
+      token = generateToken({ userId: user.id, phone });
+    }
   }
+
+  // 回退到内存存储
+  if (!user) {
+    let memoryUser = phoneUsers.get(phone);
+    if (!memoryUser) {
+      memoryUser = {
+        id: generateState(),
+        phone,
+        nickname: `用户${phone.slice(-4)}`,
+        avatar: '',
+        createdAt: Date.now(),
+      };
+      phoneUsers.set(phone, memoryUser);
+      console.log(`[Auth] 新用户注册 (内存): ${maskPhone(phone)}`);
+    }
+    user = {
+      id: memoryUser.id,
+      nickname: memoryUser.nickname,
+      avatar_url: memoryUser.avatar,
+      membership_type: 'free',
+      daily_quota: 10,
+    };
+    token = generateToken({ userId: memoryUser.id, phone });
+  }
+
+  console.log(`[Auth] 用户登录: ${maskPhone(phone)}`);
 
   res.json({
     success: true,
     data: {
+      token,
       user: {
         id: user.id,
         nickname: user.nickname,
-        avatar: user.avatar,
+        avatar: user.avatar_url || '',
+        membership_type: user.membership_type,
       },
     },
   });

@@ -32,20 +32,13 @@ import { generateId } from '../utils/id';
 import { Tooltip } from './ui';
 import { Logo } from './Logo';
 import { ShabiCoins } from './ShabiCoins';
-import { Users } from 'lucide-react';
+import { Users, LayoutGrid, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCollaboration, useCropping, useMaskEditing, useClipboard } from '../hooks';
 import {
   DEFAULT_IMAGE_SIZE,
-  DEFAULT_TEXT_WIDTH,
-  DEFAULT_TEXT_HEIGHT,
-  DEFAULT_FONT_SIZE,
   MIN_SCALE,
   MAX_SCALE,
-  AUTO_SAVE_DELAY,
-  MAX_SELECTED_IMAGES,
   MAX_DISPLAY_SIZE,
-  COLORS,
-  DEFAULTS,
 } from '../constants/canvas';
 
 interface CanvasEditorProps {
@@ -109,9 +102,9 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
   const [selectionEnd, setSelectionEnd] = useState({ x: 0, y: 0 });
 
   // 各工具的颜色
-  const colorPalette = ['#1f2937', '#8b5cf6', '#ef4444', '#f59e0b', '#10b981', '#3b82f6'];
+  const colorPalette = ['#000000', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'];
   const [toolColors, setToolColors] = useState({
-    brush: '#8b5cf6', line: '#8b5cf6', arrow: '#3b82f6', rectangle: '#10b981', circle: '#f59e0b',
+    brush: '#000000', line: '#000000', arrow: '#000000', rectangle: '#000000', circle: '#000000',
   });
   const getToolColor = (mode: ToolMode) => {
     if (mode === ToolMode.BRUSH) return toolColors.brush;
@@ -119,7 +112,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
     if (mode === ToolMode.ARROW) return toolColors.arrow;
     if (mode === ToolMode.RECTANGLE) return toolColors.rectangle;
     if (mode === ToolMode.CIRCLE) return toolColors.circle;
-    return '#8b5cf6';
+    return '#000000';
   };
   const setToolColor = (mode: ToolMode, color: string) => {
     if (mode === ToolMode.BRUSH) setToolColors(p => ({ ...p, brush: color }));
@@ -150,7 +143,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
     setCropBox,
     startCropping,
     applyCrop,
-    cancelCrop,
+    cancelCrop: _cancelCrop,
   } = useCropping({ items, setItems });
 
   // 创作工具菜单状态
@@ -158,6 +151,9 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
 
   // 社群弹窗状态
   const [showCommunityQR, setShowCommunityQR] = useState(false);
+
+  // 图片索引面板状态
+  const [showImageIndex, setShowImageIndex] = useState(false);
 
   // Chatbot 状态
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -246,11 +242,11 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
     isConnected: isCollabConnected,
     collaborators,
     remoteCursors,
-    remoteSelections,
+    remoteSelections: _remoteSelections,
     myColor,
     sendCursorMove,
     sendSelectionChange,
-    collaboratorCount,
+    collaboratorCount: _collaboratorCount,
   } = useCollaboration({
     projectId: project.id,
     enabled: true, // 默认启用协作
@@ -601,6 +597,22 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
   const _handleResetView = () => {
     setScale(1);
     setPan({ x: 0, y: 0 });
+  };
+
+  // 自动定位到指定图片
+  const autoZoomToImage = (item: CanvasItem) => {
+    // 计算图片中心点
+    const centerX = item.x + (item.width || 200) / 2;
+    const centerY = item.y + (item.height || 200) / 2;
+    // 设置合适的缩放级别（确保图片可见）
+    const targetScale = 1;
+    // 计算 pan 使图片中心在屏幕中心
+    const newPanX = -centerX * targetScale;
+    const newPanY = -centerY * targetScale;
+    setScale(targetScale);
+    setPan({ x: newPanX, y: newPanY });
+    // 选中该图片
+    setSelectedIds([item.id]);
   };
 
   // 摄像头功能
@@ -1930,6 +1942,56 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
             projectId={project.id}
             projectName={projectName}
           />
+
+          {/* 图片索引 */}
+          {items.filter(item => item.type === 'image' && item.imageData).length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setShowImageIndex(!showImageIndex)}
+                className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-gray-300 transition-colors"
+              >
+                <LayoutGrid size={18} className="text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">
+                  {items.filter(item => item.type === 'image' && item.imageData).length}
+                </span>
+                {showImageIndex ? (
+                  <ChevronUp size={16} className="text-gray-400" />
+                ) : (
+                  <ChevronDown size={16} className="text-gray-400" />
+                )}
+              </button>
+
+              {/* 索引下拉面板 */}
+              {showImageIndex && (
+                <div className="absolute top-full right-0 mt-2 w-72 max-h-80 overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-100 p-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="grid grid-cols-3 gap-2">
+                    {items
+                      .filter(item => item.type === 'image' && item.imageData)
+                      .map((item, index) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            autoZoomToImage(item);
+                            setShowImageIndex(false);
+                          }}
+                          className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-400 transition-all group"
+                        >
+                          <img
+                            src={item.imageData}
+                            alt={`图片 ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                          <div className="absolute top-1 left-1 bg-black/60 text-white text-xs font-medium px-1.5 py-0.5 rounded">
+                            {index + 1}
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -2211,7 +2273,7 @@ export function CanvasEditor({ project, onBack }: CanvasEditorProps) {
                                 const handleMove = (moveE: MouseEvent) => {
                                   const dx = (moveE.clientX - startX) / scale;
                                   const dy = (moveE.clientY - startY) / scale;
-                                  let newBox = { ...startBox };
+                                  const newBox = { ...startBox };
                                   if (isLeft) {
                                     newBox.x = Math.max(0, Math.min(startBox.x + startBox.width - 50, startBox.x + dx));
                                     newBox.width = startBox.width - (newBox.x - startBox.x);

@@ -54,7 +54,7 @@ export const validateBody = <T extends z.ZodType>(schema: T) => {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const message = error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
+        const message = error.issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(', ');
         next(HttpError.badRequest(`验证失败: ${message}`));
       } else {
         next(error);
@@ -69,11 +69,11 @@ export const validateBody = <T extends z.ZodType>(schema: T) => {
 export const validateQuery = <T extends z.ZodType>(schema: T) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
-      req.query = schema.parse(req.query);
+      req.query = schema.parse(req.query) as typeof req.query;
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const message = error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
+        const message = error.issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(', ');
         next(HttpError.badRequest(`查询参数验证失败: ${message}`));
       } else {
         next(error);

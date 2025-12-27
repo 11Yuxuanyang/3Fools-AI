@@ -339,7 +339,7 @@ export class DoubaoProvider implements AIProvider {
         .toBuffer();
 
       return `data:image/png;base64,${composite.toString('base64')}`;
-    } catch (error) {
+    } catch (_error) {
       console.warn('[Doubao] sharp 库不可用，直接使用原图进行擦除');
       // 如果 sharp 不可用，直接返回原图
       return image;
