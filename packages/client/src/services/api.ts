@@ -128,7 +128,7 @@ export async function generateImage(params: {
     timeout: 120000, // AI 生成需要更长时间，融合可能更久
     retries: 1,
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
   return image;
@@ -149,7 +149,7 @@ export async function editImage(params: {
     timeout: 60000,
     retries: 1,
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
   return image;
@@ -170,7 +170,7 @@ export async function inpaintImage(params: {
     timeout: 60000,
     retries: 1,
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
   return image;
@@ -186,7 +186,7 @@ export async function upscaleImage(params: { image: string; resolution?: '2K' | 
     timeout: 120000, // 放大可能需要更长时间
     retries: 1,
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
   return image;
@@ -429,7 +429,7 @@ export async function getCreditsBalance(): Promise<CreditBalance> {
   return request('/credits/balance', {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
 }
@@ -444,7 +444,7 @@ export async function getCreditsTransactions(limit = 20, offset = 0): Promise<{
   return request(`/credits/transactions?limit=${limit}&offset=${offset}`, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
 }
@@ -483,7 +483,7 @@ export async function dailySignin(): Promise<{
   return request('/credits/signin', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
 }
@@ -517,7 +517,7 @@ export async function getMembershipStatus(): Promise<{
   return request('/credits/membership', {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
 }
@@ -546,7 +546,7 @@ export async function createOrder(params: {
     method: 'POST',
     body: JSON.stringify(params),
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
 }
@@ -558,7 +558,7 @@ export async function getOrder(orderNo: string): Promise<Order> {
   return request(`/credits/orders/${orderNo}`, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
 }
@@ -580,7 +580,7 @@ export async function getUserOrders(limit = 10): Promise<{
   return request(`/credits/orders?limit=${limit}`, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
 }
@@ -603,7 +603,7 @@ export async function simulatePayment(orderNo: string, paymentMethod = 'wechat')
     method: 'POST',
     body: JSON.stringify({ paymentMethod }),
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
     },
   });
 }
