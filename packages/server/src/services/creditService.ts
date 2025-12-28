@@ -74,8 +74,8 @@ const CREDIT_RULES = {
   },
 } as const;
 
-// 免费用户每日签到积分
-const FREE_DAILY_SIGNIN = 20;
+// 每日免费积分（每天重置）
+const DAILY_FREE_CREDITS = 20;
 
 // ============ 积分计算 ============
 
@@ -133,15 +133,18 @@ export function inferResolution(size?: string, width?: number, height?: number):
 class CreditService {
   /**
    * 获取用户积分余额
+   * 每日自动重置为 20 积分
    */
   async getBalance(userId: string): Promise<CreditBalance> {
     if (!supabase) {
       throw new Error('数据库未配置');
     }
 
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
     const { data, error } = await supabase
       .from('user_credits')
-      .select('balance, total_earned, total_spent')
+      .select('balance, total_earned, total_spent, last_reset_date')
       .eq('user_id', userId)
       .single();
 
@@ -149,9 +152,27 @@ class CreditService {
       // 如果用户没有积分记录，创建一个
       if (error.code === 'PGRST116') {
         await this.initUserCredits(userId);
-        return { balance: 50, totalEarned: 50, totalSpent: 0 };
+        return { balance: DAILY_FREE_CREDITS, totalEarned: DAILY_FREE_CREDITS, totalSpent: 0 };
       }
       throw new Error(`获取积分余额失败: ${error.message}`);
+    }
+
+    // 检查是否需要重置（新的一天）
+    if (data.last_reset_date !== today) {
+      // 重置积分为每日额度
+      await supabase
+        .from('user_credits')
+        .update({
+          balance: DAILY_FREE_CREDITS,
+          last_reset_date: today,
+        })
+        .eq('user_id', userId);
+
+      return {
+        balance: DAILY_FREE_CREDITS,
+        totalEarned: data.total_earned,
+        totalSpent: data.total_spent,
+      };
     }
 
     return {
@@ -167,26 +188,29 @@ class CreditService {
   async initUserCredits(userId: string): Promise<void> {
     if (!supabase) return;
 
+    const today = new Date().toISOString().split('T')[0];
+
     const { error: insertError } = await supabase
       .from('user_credits')
       .insert({
         user_id: userId,
-        balance: 50,
-        total_earned: 50,
+        balance: DAILY_FREE_CREDITS,
+        total_earned: DAILY_FREE_CREDITS,
         total_spent: 0,
+        last_reset_date: today,
       });
 
     if (insertError && insertError.code !== '23505') { // 忽略重复键错误
       throw new Error(`初始化积分账户失败: ${insertError.message}`);
     }
 
-    // 记录注册奖励交易
+    // 记录每日积分
     await supabase.from('credit_transactions').insert({
       user_id: userId,
-      type: 'register_bonus',
-      amount: 50,
-      balance_after: 50,
-      description: '新用户注册奖励',
+      type: 'daily_signin',
+      amount: DAILY_FREE_CREDITS,
+      balance_after: DAILY_FREE_CREDITS,
+      description: '每日免费积分',
     });
   }
 
@@ -864,4 +888,4 @@ export const creditService = new CreditService();
 
 // 导出规则常量（供前端使用）
 export const CREDIT_COST_RULES = CREDIT_RULES;
-export const FREE_DAILY_SIGNIN_CREDITS = FREE_DAILY_SIGNIN;
+export const FREE_DAILY_CREDITS = DAILY_FREE_CREDITS;
