@@ -8,7 +8,7 @@ import {
   creditService,
   calculateCost,
   CREDIT_COST_RULES,
-  FREE_DAILY_SIGNIN_CREDITS,
+  FREE_DAILY_CREDITS,
   ActionType,
   Resolution,
 } from '../services/creditService';
@@ -101,7 +101,7 @@ router.get('/plans', async (_req: Request, res: Response) => {
       success: true,
       data: {
         plans,
-        freeUserDailySignin: FREE_DAILY_SIGNIN_CREDITS,
+        freeUserDailySignin: FREE_DAILY_CREDITS,
       },
     });
   } catch (error) {
@@ -194,7 +194,7 @@ router.get('/rules', (_req: Request, res: Response) => {
     success: true,
     data: {
       rules: CREDIT_COST_RULES,
-      freeUserDailySignin: FREE_DAILY_SIGNIN_CREDITS,
+      freeUserDailySignin: FREE_DAILY_CREDITS,
       memberDailySignin: 100,
       registerBonus: 50,
     },
