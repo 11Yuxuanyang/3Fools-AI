@@ -432,18 +432,17 @@ router.post('/invite/redeem', authMiddleware, async (req: Request, res: Response
       });
     }
 
-    // 检查用户是否已使用过此邀请码
+    // 检查用户是否已使用过任何邀请码（每个用户只能用一次）
     const { data: existingUse } = await supabase
       .from('invite_code_uses')
       .select('id')
-      .eq('invite_code_id', inviteCode.id)
       .eq('user_id', userId)
-      .single();
+      .limit(1);
 
-    if (existingUse) {
+    if (existingUse && existingUse.length > 0) {
       return res.status(400).json({
         success: false,
-        error: '您已使用过此邀请码',
+        error: '您已使用过邀请码，每人仅限使用一次',
         code: 'ALREADY_USED',
       });
     }
