@@ -489,6 +489,23 @@ export async function dailySignin(): Promise<{
 }
 
 /**
+ * 兑换邀请码
+ */
+export async function redeemInviteCode(code: string): Promise<{
+  message: string;
+  creditsGranted: number;
+  newBalance: number;
+}> {
+  return request('/credits/invite/redeem', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+    },
+  });
+}
+
+/**
  * 获取积分消耗规则
  */
 export async function getCreditRules(): Promise<{

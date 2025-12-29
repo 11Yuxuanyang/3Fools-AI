@@ -13,6 +13,7 @@ import {
   Resolution,
 } from '../services/creditService';
 import { authMiddleware } from '../middleware/creditCheck';
+import { supabase } from '../lib/supabase';
 
 const router = Router();
 
@@ -371,6 +372,127 @@ router.post('/orders/:orderNo/pay', authMiddleware, async (req: Request, res: Re
     res.status(500).json({
       success: false,
       error: '支付处理失败',
+    });
+  }
+});
+
+// ============ 邀请码 API ============
+
+const redeemInviteCodeSchema = z.object({
+  code: z.string().min(1).max(20).transform(s => s.toUpperCase().trim()),
+});
+
+/**
+ * POST /api/credits/invite/redeem
+ * 兑换邀请码获得积分
+ */
+router.post('/invite/redeem', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    if (!supabase) {
+      return res.status(500).json({
+        success: false,
+        error: '数据库未配置',
+      });
+    }
+
+    const userId = req.user!.userId;
+    const { code } = redeemInviteCodeSchema.parse(req.body);
+
+    // 查找邀请码
+    const { data: inviteCode, error: findError } = await supabase
+      .from('invite_codes')
+      .select('*')
+      .eq('code', code)
+      .eq('is_active', true)
+      .single();
+
+    if (findError || !inviteCode) {
+      return res.status(400).json({
+        success: false,
+        error: '邀请码无效或不存在',
+        code: 'INVALID_CODE',
+      });
+    }
+
+    // 检查是否过期
+    if (inviteCode.expires_at && new Date(inviteCode.expires_at) < new Date()) {
+      return res.status(400).json({
+        success: false,
+        error: '邀请码已过期',
+        code: 'CODE_EXPIRED',
+      });
+    }
+
+    // 检查是否达到使用上限
+    if (inviteCode.max_uses && inviteCode.used_count >= inviteCode.max_uses) {
+      return res.status(400).json({
+        success: false,
+        error: '邀请码已达到使用上限',
+        code: 'CODE_EXHAUSTED',
+      });
+    }
+
+    // 检查用户是否已使用过此邀请码
+    const { data: existingUse } = await supabase
+      .from('invite_code_uses')
+      .select('id')
+      .eq('invite_code_id', inviteCode.id)
+      .eq('user_id', userId)
+      .single();
+
+    if (existingUse) {
+      return res.status(400).json({
+        success: false,
+        error: '您已使用过此邀请码',
+        code: 'ALREADY_USED',
+      });
+    }
+
+    // 发放积分
+    const bonusCredits = inviteCode.bonus_credits;
+    await creditService.addCredits(
+      userId,
+      bonusCredits,
+      'register_bonus',
+      `邀请码奖励: ${code}`,
+      { inviteCodeId: inviteCode.id, code }
+    );
+
+    // 记录使用
+    await supabase.from('invite_code_uses').insert({
+      invite_code_id: inviteCode.id,
+      user_id: userId,
+      credits_granted: bonusCredits,
+    });
+
+    // 更新使用次数
+    await supabase
+      .from('invite_codes')
+      .update({ used_count: inviteCode.used_count + 1 })
+      .eq('id', inviteCode.id);
+
+    // 获取最新余额
+    const balance = await creditService.getBalance(userId);
+
+    res.json({
+      success: true,
+      data: {
+        message: `邀请码兑换成功，获得 ${bonusCredits} 傻币！`,
+        creditsGranted: bonusCredits,
+        newBalance: balance.balance,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        error: '邀请码格式错误',
+      });
+    }
+    console.error('兑换邀请码失败:', error);
+    res.status(500).json({
+      success: false,
+      error: '兑换失败，请稍后重试',
     });
   }
 });

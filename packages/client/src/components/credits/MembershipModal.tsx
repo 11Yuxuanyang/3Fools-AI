@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { getMembershipPlans, createOrder, simulatePayment, MembershipPlan, Order } from '@/services/api';
+import { getMembershipPlans, createOrder, simulatePayment, redeemInviteCode, MembershipPlan, Order } from '@/services/api';
 
 type BillingCycle = 'yearly' | 'monthly_continuous' | 'monthly';
 
@@ -49,6 +49,11 @@ export function MembershipModal({
   // 当前选择的计费周期
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('yearly');
 
+  // 邀请码相关状态
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteCodeLoading, setInviteCodeLoading] = useState(false);
+  const [inviteCodeMessage, setInviteCodeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   useEffect(() => {
     const fetchPlans = async () => {
       try {
@@ -63,6 +68,27 @@ export function MembershipModal({
     };
     fetchPlans();
   }, []);
+
+  // 兑换邀请码
+  const handleRedeemInviteCode = async () => {
+    if (!inviteCode.trim() || inviteCodeLoading) return;
+
+    setInviteCodeLoading(true);
+    setInviteCodeMessage(null);
+
+    try {
+      const result = await redeemInviteCode(inviteCode.trim());
+      setInviteCodeMessage({ type: 'success', text: result.message });
+      setInviteCode('');
+      // 通知父组件刷新余额
+      onPurchaseSuccess();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : '兑换失败';
+      setInviteCodeMessage({ type: 'error', text: errorMessage });
+    } finally {
+      setInviteCodeLoading(false);
+    }
+  };
 
   // 格式化价格（分转元）
   const formatPrice = (cents: number): string => {
@@ -492,6 +518,34 @@ export function MembershipModal({
             })}
           </div>
         )}
+
+        {/* 邀请码兑换 */}
+        <div className="px-6 py-4 border-t">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600 whitespace-nowrap">邀请码</span>
+            <input
+              type="text"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === 'Enter' && handleRedeemInviteCode()}
+              placeholder="输入邀请码获得额外傻币"
+              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400"
+              disabled={inviteCodeLoading}
+            />
+            <button
+              onClick={handleRedeemInviteCode}
+              disabled={!inviteCode.trim() || inviteCodeLoading}
+              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {inviteCodeLoading ? '兑换中...' : '兑换'}
+            </button>
+          </div>
+          {inviteCodeMessage && (
+            <p className={`mt-2 text-sm ${inviteCodeMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+              {inviteCodeMessage.text}
+            </p>
+          )}
+        </div>
 
         {/* 底部说明 */}
         <div className="px-6 py-4 text-center text-xs text-gray-500 border-t">
