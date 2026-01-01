@@ -92,7 +92,6 @@ export function CanvasToolbar({
           }}
         >
           <MousePointer2 size={20} />
-          <span className="absolute bottom-1.5 right-1.5 text-[10px] font-bold leading-none">1</span>
         </button>
       </Tooltip>
 
@@ -118,7 +117,6 @@ export function CanvasToolbar({
             }}
           >
             {getToolIcon()}
-            <span className="absolute bottom-1.5 right-1.5 text-[10px] font-bold leading-none">2</span>
           </button>
         </Tooltip>
 

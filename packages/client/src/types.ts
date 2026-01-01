@@ -16,6 +16,43 @@ export interface CanvasItem {
   originalY?: number;
   cropX?: number;  // 裁剪位置
   cropY?: number;
+  // 图片调整属性 - 基础
+  brightness?: number;    // 亮度 0-200, 默认 100
+  contrast?: number;      // 对比度 0-200, 默认 100
+  saturation?: number;    // 饱和度 0-200, 默认 100
+  rotation?: number;      // 旋转角度 0-360
+  flipH?: boolean;        // 水平翻转
+  flipV?: boolean;        // 垂直翻转
+  filter?: string;        // 滤镜预设名称
+  // 图片调整属性 - 进阶
+  exposure?: number;      // 曝光 0-200, 默认 100
+  sharpness?: number;     // 锐化 0-200, 默认 100
+  highlights?: number;    // 高光 0-200, 默认 100
+  shadows?: number;       // 阴影 0-200, 默认 100
+  temperature?: number;   // 色温 0-200, 默认 100 (冷-暖)
+  tint?: number;          // 色调 0-200, 默认 100 (绿-品红)
+  hue?: number;           // 色相 0-360, 默认 0 (色相旋转)
+  texture?: number;       // 纹理/清晰度 0-200, 默认 100
+  luminanceNoise?: number; // 亮度降噪 0-100, 默认 0
+  colorNoise?: number;     // 颜色降噪 0-100, 默认 0
+  vignette?: number;      // 晕影 0-100, 默认 0
+  grain?: number;         // 颗粒/噪点 0-100, 默认 0
+  // 边框
+  imgBorderWidth?: number;    // 边框宽度
+  imgBorderColor?: string;    // 边框颜色
+  imgBorderStyle?: 'solid' | 'dashed' | 'dotted';
+  // 阴影
+  imgShadowEnabled?: boolean;
+  imgShadowX?: number;
+  imgShadowY?: number;
+  imgShadowBlur?: number;
+  imgShadowColor?: string;
+  // 水印
+  watermarkText?: string;
+  watermarkPosition?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
+  watermarkSize?: number;
+  watermarkColor?: string;
+  watermarkOpacity?: number;
   // Text-specific properties
   fontSize?: number;
   fontFamily?: string;

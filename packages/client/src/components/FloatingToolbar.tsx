@@ -9,6 +9,7 @@ import {
   Expand,
   X,
   Send,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 interface FloatingToolbarProps {
@@ -18,9 +19,11 @@ interface FloatingToolbarProps {
   onInpaint: () => void;   // 涂抹擦除
   onRepaint: () => void;   // 局部重绘
   onExpand: () => void;
+  onAdjust: () => void;    // 图片调整
   onDelete: () => void;
   onDownload: () => void;
   isProcessing: boolean;
+  showAdjustPanel?: boolean;
 }
 
 interface ToolButtonProps {
@@ -67,9 +70,11 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   onInpaint,
   onRepaint,
   onExpand,
+  onAdjust,
   onDelete,
   onDownload,
-  isProcessing
+  isProcessing,
+  showAdjustPanel = false,
 }) => {
   const [showEditInput, setShowEditInput] = useState(false);
   const [editPrompt, setEditPrompt] = useState("");
@@ -154,6 +159,17 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                 label="局部重绘"
                 onClick={onRepaint}
                 disabled={isProcessing}
+              />
+            </div>
+
+            {/* 修图 */}
+            <div className="flex items-center gap-0.5 px-1 border-r border-gray-200">
+              <ToolButton
+                icon={<SlidersHorizontal size={14} />}
+                label="修图"
+                onClick={onAdjust}
+                disabled={isProcessing}
+                highlight={showAdjustPanel}
               />
             </div>
 

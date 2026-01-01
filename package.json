@@ -19,16 +19,23 @@
     "lint": "eslint packages/*/src --ext .ts,.tsx",
     "lint:fix": "eslint packages/*/src --ext .ts,.tsx --fix",
     "format": "prettier --write \"packages/*/src/**/*.{ts,tsx,css}\"",
-    "format:check": "prettier --check \"packages/*/src/**/*.{ts,tsx,css}\""
+    "format:check": "prettier --check \"packages/*/src/**/*.{ts,tsx,css}\"",
+    "test": "npm run test --workspaces --if-present",
+    "test:client": "npm run test --workspace=packages/client"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@types/node": "^25.0.3",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "jsdom": "^27.4.0",
     "prettier": "^3.7.4",
-    "typescript-eslint": "^8.50.1"
+    "typescript-eslint": "^8.50.1",
+    "vitest": "^4.0.16"
   }
 }

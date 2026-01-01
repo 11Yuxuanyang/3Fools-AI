@@ -3,8 +3,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../services/authService';
-import { supabase, isSupabaseAvailable } from '../lib/supabase';
+import { verifyToken } from '../services/authService.js';
+import { supabase, isSupabaseAvailable } from '../lib/supabase.js';
+import { adminLogger } from '../lib/logger.js';
 
 // 扩展 Request 类型
 declare global {
@@ -95,7 +96,7 @@ export async function adminAuthMiddleware(
 
     next();
   } catch (error) {
-    console.error('[AdminAuth] 认证错误:', error);
+    adminLogger.error({ err: error }, '认证错误');
     return res.status(500).json({
       success: false,
       error: '认证服务错误',
@@ -115,7 +116,7 @@ export async function logAdminAction(
   ipAddress?: string
 ) {
   if (!isSupabaseAvailable()) {
-    console.warn('[AdminLog] Supabase 不可用，跳过日志记录');
+    adminLogger.warn('Supabase 不可用，跳过日志记录');
     return;
   }
 
@@ -129,6 +130,6 @@ export async function logAdminAction(
       ip_address: ipAddress,
     });
   } catch (error) {
-    console.error('[AdminLog] 日志记录失败:', error);
+    adminLogger.error({ err: error }, '日志记录失败');
   }
 }

@@ -162,6 +162,55 @@ export async function uploadImagesToTOS(base64Images: string[]): Promise<string[
 }
 
 /**
+ * 从 URL 下载图片并直接上传到 TOS（不转 base64，更快）
+ * @param imageUrl 源图片 URL
+ * @returns TOS 上的永久访问 URL
+ */
+export async function uploadFromUrl(imageUrl: string): Promise<string> {
+  console.log('[TOS] 从 URL 下载并上传图片...');
+
+  // 确保 Bucket 存在
+  await ensureBucketExists();
+
+  const client = getClient();
+
+  // 下载图片
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`下载图片失败: ${response.status}`);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const contentType = response.headers.get('content-type') || 'image/jpeg';
+  const extension = contentType.split('/')[1] || 'jpg';
+
+  // 生成唯一的文件名
+  const timestamp = Date.now();
+  const uuid = randomUUID().slice(0, 8);
+  const key = `generated/${timestamp}-${uuid}.${extension}`;
+
+  try {
+    // 上传到 TOS
+    await client.putObject({
+      bucket: TOS_CONFIG.bucket,
+      key,
+      body: buffer,
+      contentType,
+      acl: ACLType.ACLPublicRead,
+    });
+
+    // 构建公网访问 URL
+    const url = `https://${TOS_CONFIG.bucket}.${TOS_CONFIG.endpoint}/${key}`;
+    console.log(`[TOS] 转存成功: ${url}`);
+
+    return url;
+  } catch (error: any) {
+    console.error('[TOS] 转存失败:', error.message);
+    throw new Error(`TOS 转存失败: ${error.message}`);
+  }
+}
+
+/**
  * 检查 TOS 配置是否完整
  */
 export function isTOSConfigured(): boolean {

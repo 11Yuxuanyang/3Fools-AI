@@ -4,8 +4,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { creditService, calculateCost, inferResolution, ActionType, Resolution } from '../services/creditService';
-import { verifyToken } from '../services/authService';
+import { creditService, calculateCost, inferResolution, ActionType, Resolution } from '../services/creditService.js';
+import { verifyToken } from '../services/authService.js';
+import { creditLogger } from '../lib/logger.js';
 
 // 扩展 Request 类型（Express 类型扩展需要使用 namespace）
 declare global {
@@ -125,7 +126,7 @@ export function creditCheckMiddleware(actionOverride?: ActionType) {
 
       next();
     } catch (error) {
-      console.error('积分检查失败:', error);
+      creditLogger.error({ err: error }, '积分检查失败');
       return res.status(500).json({
         success: false,
         error: '积分检查失败',

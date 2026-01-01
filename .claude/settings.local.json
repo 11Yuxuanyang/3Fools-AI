@@ -47,7 +47,13 @@
       "Bash(git pull:*)",
       "Bash(awk:*)",
       "WebFetch(domain:openrouter.ai)",
-      "Bash(npm run build:server:*)"
+      "Bash(npm run build:server:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:client:*)",
+      "Bash(npm run test:*)",
+      "Bash(time curl:*)",
+      "Bash(timeout 5 npm run dev:client)"
     ],
     "deny": [],
     "ask": []

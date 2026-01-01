@@ -12,6 +12,7 @@ export const MIN_HIT_AREA = 20;
 // 缩放限制
 export const MIN_SCALE = 0.1;
 export const MAX_SCALE = 5;
+export const ZOOM_STEP = 0.15;
 
 // 自动保存延迟（毫秒）
 export const AUTO_SAVE_DELAY = 500;

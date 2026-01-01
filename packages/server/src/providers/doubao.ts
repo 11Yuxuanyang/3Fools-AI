@@ -7,6 +7,7 @@
 import { AIProvider, GenerateImageParams, EditImageParams, InpaintImageParams, UpscaleImageParams } from './base.js';
 import { config } from '../config.js';
 import { uploadImages } from '../services/imageUpload.js';
+import { uploadFromUrl } from '../services/tosUpload.js';
 
 // 安全日志：生产环境不输出敏感详情
 const isDev = config.nodeEnv === 'development';
@@ -110,11 +111,11 @@ export class DoubaoProvider implements AIProvider {
       return `data:image/png;base64,${b64}`;
     }
 
-    // 如果返回的是 URL，需要下载并转换
+    // 如果返回的是 URL，转存到 TOS 后返回永久 URL
     const url = data.data?.[0]?.url;
     if (url) {
-      console.log('[Doubao] 返回 URL，正在下载转换为 base64...');
-      return await this.urlToBase64(url);
+      console.log('[Doubao] 返回 URL，转存到 TOS...');
+      return await uploadFromUrl(url);
     }
 
     throw new Error('豆包未返回图片数据');
@@ -224,15 +225,15 @@ export class DoubaoProvider implements AIProvider {
       return `data:image/png;base64,${b64}`;
     }
 
-    // 如果返回的是 URL，需要下载并转换
+    // 如果返回的是 URL，直接转存到 TOS
     const url = data.data?.[0]?.url;
     if (url) {
-      console.log('[Doubao] 图生图成功，返回 URL，正在下载转换为 base64...');
+      console.log('[Doubao] 图生图成功，正在转存到 TOS...');
       try {
-        return await this.urlToBase64(url);
+        return await uploadFromUrl(url);
       } catch (downloadError: any) {
-        console.error('[Doubao] 下载生成的图片失败:', downloadError.message);
-        throw new Error(`生成成功但下载图片失败: ${downloadError.message}`);
+        console.error('[Doubao] 转存图片失败:', downloadError.message);
+        throw new Error(`生成成功但转存图片失败: ${downloadError.message}`);
       }
     }
 
@@ -354,22 +355,4 @@ export class DoubaoProvider implements AIProvider {
     throw new Error('豆包 Seedream 暂不支持图片放大功能');
   }
 
-  /**
-   * 将 URL 图片转换为 base64
-   */
-  private async urlToBase64(url: string): Promise<string> {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`下载图片失败: ${response.status}`);
-    }
-
-    const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
-
-    // 尝试从 Content-Type 获取格式
-    const contentType = response.headers.get('content-type') || 'image/png';
-
-    return `data:${contentType};base64,${base64}`;
-  }
 }

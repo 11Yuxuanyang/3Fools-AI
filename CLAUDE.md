@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 项目进度
 
 ### ✅ 已完成
-- [x] CI/CD 自动部署 (GitHub Actions + SSH)
+- [x] CI/CD 自动部署 (GitHub Actions + SSH + lint + test)
 - [x] 强制登录功能（未登录弹出登录框）
 - [x] 项目云端存储（Supabase PostgreSQL）
 - [x] 用户认证系统（手机号 + 验证码）
@@ -23,6 +23,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] 管理后台（用户管理、订单管理、数据统计）
 - [x] AI 聊天 Token 计费（输入/输出分开计费、缓存命中跟踪）
 - [x] 系统提示词优化（从 2365 字符精简到 328 字符）
+- [x] Zustand 状态管理（canvasStore, viewportStore, generationStore, uiStore, interactionStore）
+- [x] 组件拆分（ZoomControls, CameraModal, GenerationBar, ChatButton 等）
+- [x] 测试体系（Vitest + Testing Library, 22 个测试用例）
+- [x] 后端日志库（pino）
 
 ### ⏳ 待开发
 - [ ] 短信验证码服务（接入阿里云/火山引擎短信）
@@ -107,6 +111,10 @@ npm run lint:fix
 # 格式化
 npm run format
 npm run format:check
+
+# 测试
+npm run test              # 运行所有测试
+npm run test:client       # 仅运行前端测试
 ```
 
 ## 后端配置

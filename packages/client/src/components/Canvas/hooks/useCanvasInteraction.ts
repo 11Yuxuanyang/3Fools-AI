@@ -118,6 +118,12 @@ export interface InteractionHandlers {
   selectionStart: { x: number; y: number };
   selectionEnd: { x: number; y: number };
   mousePositionRef: React.MutableRefObject<{ x: number; y: number }>;
+  // 供 line/arrow 元素直接使用的 setters
+  setIsDragging: React.Dispatch<React.SetStateAction<boolean>>;
+  setDragStart: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+  setItemStart: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+  setItemsStartPositions: React.Dispatch<React.SetStateAction<Record<string, { x: number; y: number }>>>;
+  setLinePointDrag: React.Dispatch<React.SetStateAction<{ itemId: string; pointType: 'start' | 'end' | 'control' } | null>>;
 }
 
 export function useCanvasInteraction({
@@ -822,5 +828,11 @@ export function useCanvasInteraction({
     selectionStart,
     selectionEnd,
     mousePositionRef,
+    // 供 line/arrow 元素直接使用的 setters
+    setIsDragging,
+    setDragStart,
+    setItemStart,
+    setItemsStartPositions,
+    setLinePointDrag,
   };
 }
